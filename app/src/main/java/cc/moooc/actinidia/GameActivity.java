@@ -65,7 +65,10 @@ public class GameActivity extends Activity {
         }
         int toset = vertical?ActivityInfo.SCREEN_ORIENTATION_PORTRAIT:ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
         if(getRequestedOrientation()!=toset){
-            setRequestedOrientation(toset);
+            if(!vertical){
+                setRequestedOrientation(toset);
+                return;
+            }
         }
 
         requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -153,10 +156,10 @@ public class GameActivity extends Activity {
     public void onBackPressed() {
         timer.cancel();
         timer = null;
+        OnClose();  // !
         sp.release();
         sp = null;
         backPressed = true;
-        OnClose();  // !
         super.onBackPressed();
     }
 
@@ -172,9 +175,9 @@ public class GameActivity extends Activity {
         if(timer != null) {
             timer.cancel();
             timer = null;
+            if (!backPressed) OnClose();    // !
             sp.release();
             sp = null;
-            if (!backPressed) OnClose();    // !
         }
         super.onDestroy();
     }

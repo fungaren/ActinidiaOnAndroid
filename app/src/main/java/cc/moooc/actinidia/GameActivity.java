@@ -66,7 +66,6 @@ public class GameActivity extends Activity {
         int toset = vertical?ActivityInfo.SCREEN_ORIENTATION_PORTRAIT:ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
         if(getRequestedOrientation()!=toset){
             setRequestedOrientation(toset);
-            return;
         }
 
         requestWindowFeature(Window.FEATURE_NO_TITLE);

@@ -78,7 +78,7 @@ public class MainActivity extends AppCompatActivity {
         tvh.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Toast.makeText(MainActivity.this, "hello", Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, "Nutritious!", Toast.LENGTH_SHORT).show();
             }
         });
         TextView tvs = (TextView)v.findViewById(R.id.textView_site);

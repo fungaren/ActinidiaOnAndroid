@@ -85,7 +85,7 @@ int PrintText(lua_State *L)
     api_env->CallVoidMethod(
             api_thiz,api_env->GetMethodID(jcls,"printText",
                                           "(Landroid/graphics/Bitmap;FFLjava/lang/String;Ljava/lang/String;FIII)V"),
-            g, x, y, jstr, jFontName, FontSize*3, (char)color, (char)(color>>8), (char)(color>>16)
+            g, x, y, jstr, jFontName, FontSize, (char)color, (char)(color>>8), (char)(color>>16)
     );
     lua_pushboolean(L, true);
     return 1;

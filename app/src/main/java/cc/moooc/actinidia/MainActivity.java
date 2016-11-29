@@ -8,6 +8,7 @@ import android.os.Environment;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -23,7 +24,7 @@ public class MainActivity extends AppCompatActivity {
     private String[] gameList;  // game folders
     private File gameDir;       // eg. ActinidiaGames/res-rpg
     private boolean vertical;
-
+    private AlertDialog dlg;
     /**
      * Make preparations.
      */
@@ -41,8 +42,8 @@ public class MainActivity extends AppCompatActivity {
             gameList = actinidiaDir.list();     // list games
         }
 
-        AlertDialog dlg = new AlertDialog.Builder(this)
-        .setTitle("Pick a game")
+        dlg = new AlertDialog.Builder(this)
+        .setTitle(getString(R.string.choose_game))
         .setItems(gameList, new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
@@ -64,28 +65,15 @@ public class MainActivity extends AppCompatActivity {
                 i.putExtra("gameDir",gameDir);
                 startActivity(i);
             }
-        })
-        .setOnCancelListener(new DialogInterface.OnCancelListener() {
-            @Override
-            public void onCancel(DialogInterface dialogInterface) {
-                MainActivity.this.finish();
-            }
         }).show();
 
 
         View v = getLayoutInflater().inflate(R.layout.layout_main,null,true);
-        TextView tvh = (TextView)v.findViewById(R.id.textView_hello);
+        Button tvh = (Button)v.findViewById(R.id.button_choose);
         tvh.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Toast.makeText(MainActivity.this, "Nutritious!", Toast.LENGTH_SHORT).show();
-            }
-        });
-        TextView tvs = (TextView)v.findViewById(R.id.textView_site);
-        tvs.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("http://moooc.cc")));
+                dlg.show();
             }
         });
         TextView tvg = (TextView)v.findViewById(R.id.textView_github);

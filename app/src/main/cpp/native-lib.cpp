@@ -35,6 +35,8 @@ Java_cc_moooc_actinidia_GameActivity_OnCreate(JNIEnv *env, jobject thiz){
 	lua_register(L, "StopSound", StopSound);
 	lua_register(L, "SetVolume", SetVolume);
 	lua_register(L, "PlaySound", PlaySound);
+    lua_register(L, "GetSetting", GetSetting);
+    lua_register(L, "SaveSetting", SaveSetting);
 
     const char* main = "res/lua/main.lua";
     jstring jmain = env->NewStringUTF(main);

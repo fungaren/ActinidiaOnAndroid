@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Actinidia</string>
+    <string name="choose_game">选择游戏</string>
+    <string name="tip">确保已经添加SD卡访问权限</string>
+    <string name="github">Github</string>
+</resources>

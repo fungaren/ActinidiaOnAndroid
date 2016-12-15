@@ -25,8 +25,9 @@ public class MainActivity extends AppCompatActivity {
     private File gameDir;       // eg. ActinidiaGames/res-rpg
     private boolean vertical;
     private AlertDialog dlg;
+
     /**
-     * Make preparations.
+     * Preparation
      */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
                     Properties p = new Properties();
                     p.load(config);
                     vertical = p.getProperty("orientation").equals("vertical");
+                    config.close();
                 }
                 catch (IOException e){
                     vertical = false;
@@ -67,6 +69,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }).show();
 
+        // Update UI
 
         View v = getLayoutInflater().inflate(R.layout.layout_main,null,true);
         Button tvh = (Button)v.findViewById(R.id.button_choose);
@@ -76,6 +79,13 @@ public class MainActivity extends AppCompatActivity {
                 dlg.show();
             }
         });
+
+        String version = "";
+        try { version = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;}
+        catch(Exception e) {e.printStackTrace();}
+        TextView tver = (TextView)v.findViewById(R.id.textView_version);
+        tver.setText(version);
+
         TextView tvg = (TextView)v.findViewById(R.id.textView_github);
         tvg.setOnClickListener(new View.OnClickListener() {
             @Override

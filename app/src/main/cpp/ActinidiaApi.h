@@ -11,7 +11,7 @@ jclass jcls;
 
 // Global functions for lua
 
-// lua: Image CreateImage(width, height), Create Image with Black bg, must DeleteImage() in OnClose()
+// lua: Image CreateImage(width, height)
 int CreateImage(lua_State *L)
 {
     int n = lua_gettop(L);
@@ -27,7 +27,7 @@ int CreateImage(lua_State *L)
     return 1;
 }
 
-// lua: Image CreateImageEx(width, height, color), Create Image with specific bg, must DeleteImage() in OnClose()
+// lua: Image CreateImageEx(width, height, color)
 int CreateImageEx(lua_State *L)
 {
     int n = lua_gettop(L);
@@ -43,7 +43,7 @@ int CreateImageEx(lua_State *L)
     return 1;
 }
 
-// lua: Image CreateTransImage(width, height), Create Transparent Image, must DeleteImage() in OnClose()
+// lua: Image CreateTransImage(width, height)
 int CreateTransImage(lua_State *L)
 {
     int n = lua_gettop(L);
@@ -140,7 +140,7 @@ int GetText(lua_State *L)
     return 1;
 }
 
-// lua: image GetImage(pathname), must DeleteImage() in OnClose()
+// lua: image GetImage(pathname)
 int GetImage(lua_State *L)
 {
     int n = lua_gettop(L);
@@ -161,7 +161,7 @@ int GetImage(lua_State *L)
     return 1;
 }
 
-// lua: sound GetSound(pathname, b_loop), if b_loop set true, must StopSound() in OnClose()
+// lua: sound GetSound(pathname, b_loop)
 int GetSound(lua_State *L)
 {
     int n = lua_gettop(L);
@@ -182,7 +182,7 @@ int GetSound(lua_State *L)
     return 1;
 }
 
-// lua: void EmptyStack(), free memory manually, must DeleteImage() and StopSound() in advance.
+// lua: void EmptyStack()
 int EmptyStack(lua_State *L)
 {
     return 0;
@@ -340,5 +340,44 @@ int PlaySound(lua_State *L)
     jint sound = (jint)lua_tointeger(L, 1);
     api_env->CallVoidMethod(
             api_thiz,api_env->GetMethodID(jcls,"playSound", "(I)V"), sound);
+    return 0;
+}
+
+// lua: string GetSetting(string key)
+int GetSetting(lua_State *L)
+{
+    int n = lua_gettop(L);
+    if (n != 1) return 0;
+    const char* key = lua_tostring(L, 1);
+    jstring jkey = api_env->NewStringUTF(key);
+    jstring jval = (jstring)api_env->CallObjectMethod(
+            api_thiz, api_env->GetMethodID(jcls,"getSetting",
+                                           "(Ljava/lang/String;)Ljava/lang/String;"),
+            jkey);
+    if (NULL!=jval)
+    {
+        const char* str = api_env->GetStringUTFChars(jval, NULL);
+        lua_pushlstring(L, str, (size_t)api_env->GetStringUTFLength(jval));
+        api_env->ReleaseStringUTFChars(jval,str);
+        api_env->DeleteLocalRef(jval);
+        return 1;
+    }
+    lua_pushnil(L);
+    return 1;
+}
+
+// lua: void SaveSetting(string key, string value)
+int SaveSetting(lua_State *L)
+{
+    int n = lua_gettop(L);
+    if (n != 2) return 0;
+    const char* key = lua_tostring(L, 1);
+    const char* val = lua_tostring(L, 2);
+    jstring jkey = api_env->NewStringUTF(key);
+    jstring jval = api_env->NewStringUTF(val);
+    api_env->CallVoidMethod(
+            api_thiz, api_env->GetMethodID(jcls,"saveSetting",
+                                           "(Ljava/lang/String;Ljava/lang/String;)V"),
+            jkey, jval);
     return 0;
 }

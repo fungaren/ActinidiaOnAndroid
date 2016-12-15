@@ -25,9 +25,13 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -41,12 +45,15 @@ public class GameActivity extends Activity {
     }
 
     private File gameDir;
-    private boolean vertical=false;
+    private boolean vertical=false; // in "res/config.ini"
 
     private Timer timer;     // produce refresh message
     private SoundPool sp;
     private Map<Integer,Boolean> sound_list;
-    private Handler hRefresh = new Handler();   // redraw
+    private Handler hRefresh = new Handler();   // for redraw
+
+    private File data_file;        // user data ("res/data")
+    private Properties prop;        // load settings at beginning, save setting on destroy
 
     /**
      * Make preparations.
@@ -80,22 +87,35 @@ public class GameActivity extends Activity {
             public void surfaceRedrawNeeded(SurfaceHolder surfaceHolder) { }
             @Override
             public void surfaceCreated(SurfaceHolder surfaceHolder) {
-                // Load game !
+                // Load settings
+                data_file = new File(gameDir, "data");
+                prop = new Properties();
+                try {
+                    Reader data_reader = new FileReader(data_file);
+                    prop.load(data_reader);
+                    data_reader.close();
+                }catch(IOException e){
+
+                }
+
+                // init SoundPool
                 sp = new SoundPool.Builder().setMaxStreams(255).build();
                 sound_list = new HashMap<>();
                 sp.setOnLoadCompleteListener(new SoundPool.OnLoadCompleteListener() {
                     @Override
                     public void onLoadComplete(SoundPool soundPool, int i, int i1) {
-                        if(sound_list.get(i)) sp.play(i,1,1,1,0,1); // if loop, auto-play
+                    if(sound_list.get(i)) sp.play(i,1,1,1,0,1); // if loop, auto-play
                     }
                 });
 
                 String err = OnCreate();            // launch game
+
                 if (!err.isEmpty()){
                     Toast.makeText(GameActivity.this, err, Toast.LENGTH_LONG).show();
                     GameActivity.this.finish();
                 }
 
+                // set timer
                 timer = new Timer();
                 timer.schedule(new TimerTask() {
                     @Override
@@ -109,7 +129,7 @@ public class GameActivity extends Activity {
                         }
                     });
                     }
-                }, 300, 20);       // period: 16.6667ms -> 60fps
+                }, 300, 19);       // period: 16.6667ms -> 60fps
             }
 
             @Override
@@ -150,6 +170,24 @@ public class GameActivity extends Activity {
         setContentView(sfv);
     }
 
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putBoolean("vertical", vertical);
+        outState.putSerializable("gameDir", gameDir);
+        super.onSaveInstanceState(outState);
+    }
+
+    private void saveUserData()
+    {
+        try {
+            Writer data_writer = new FileWriter(data_file);
+            prop.store(data_writer, null);   // save user data
+            data_writer.close();
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+    }
+
     private boolean backPressed =false;
     @Override
     public void onBackPressed() {
@@ -158,15 +196,9 @@ public class GameActivity extends Activity {
         OnClose();  // !
         sp.release();
         sp = null;
+        saveUserData();
         backPressed = true;
         super.onBackPressed();
-    }
-
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        outState.putBoolean("vertical", vertical);
-        outState.putSerializable("gameDir", gameDir);
-        super.onSaveInstanceState(outState);
     }
 
     @Override
@@ -174,10 +206,12 @@ public class GameActivity extends Activity {
         if(timer != null) {
             timer.cancel();
             timer = null;
-            if (!backPressed) OnClose();    // !
+            if (!backPressed) OnClose(); // !!!
             sp.release();
             sp = null;
+            saveUserData();
         }
+
         super.onDestroy();
     }
 
@@ -301,6 +335,12 @@ public class GameActivity extends Activity {
     public void playSound(int sound) {
         if(!sound_list.get(sound))
             sp.play(sound,1,1,1,0,1); // loop will auto-play
+    }
+    public String getSetting(String key) {
+        return prop.getProperty(key);   // return null if not found
+    }
+    public void saveSetting(String key, String value) {
+        prop.setProperty(key,value);
     }
 
     /**

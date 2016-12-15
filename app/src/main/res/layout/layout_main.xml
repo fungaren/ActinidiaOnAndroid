@@ -28,11 +28,20 @@
         android:id="@+id/textView_tip"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_above="@+id/textView_github"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="47dp"
+        android:layout_marginBottom="19dp"
         android:text="@string/tip"
-        android:textAlignment="center" />
+        android:textAlignment="center"
+        android:layout_above="@+id/textView_version"
+        android:layout_centerHorizontal="true" />
+
+    <TextView
+        android:id="@+id/textView_version"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="19dp"
+        android:text="version"
+        android:layout_above="@+id/textView_github"
+        android:layout_alignStart="@+id/imageView" />
 
     <ImageView
         android:id="@+id/imageView"

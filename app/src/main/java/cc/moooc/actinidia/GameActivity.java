@@ -154,7 +154,7 @@ public class GameActivity extends Activity {
                             float newX = motionEvent.getX();
                             float newY = motionEvent.getY();
                             // suppress
-                            if(Math.abs(newX-oldX)>12||Math.abs(newY-oldY)>12)
+                            if(Math.abs(newX-oldX)>6||Math.abs(newY-oldY)>6)
                                 OnMouseMove(newX,newY);
                             oldX = newX;
                             oldY = newY;

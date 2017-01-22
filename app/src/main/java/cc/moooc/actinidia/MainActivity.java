@@ -28,8 +28,6 @@ public class MainActivity extends AppCompatActivity {
     private String[] gameList;  // game folders
     private File gameDir;       // eg. ActinidiaGames/res-rpg
     private boolean vertical;
-    private AlertDialog dlg;
-
 
     private static final int PERMISSION_REQUEST_CODE = 1;
 
@@ -42,47 +40,10 @@ public class MainActivity extends AppCompatActivity {
 
         if (PackageManager.PERMISSION_GRANTED == ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
             // available
-        }else {
+            listGames();
+        } else {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSION_REQUEST_CODE);
-
         }
-
-        if(Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)){
-
-            File sdCardDir = Environment.getExternalStorageDirectory();
-
-            actinidiaDir = new File(sdCardDir, "ActinidiaGames");
-            if(!actinidiaDir.exists()){
-                actinidiaDir.mkdir();           // create directories
-            }
-            gameList = actinidiaDir.list();     // list games
-        }
-
-        dlg = new AlertDialog.Builder(this)
-        .setTitle(getString(R.string.choose_game))
-        .setItems(gameList, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                /* games menu */
-                gameDir = new File(actinidiaDir, gameList[which]);
-
-                try {
-                    Reader config = new FileReader(new File(gameDir,"config.ini"));
-                    Properties p = new Properties();
-                    p.load(config);
-                    vertical = p.getProperty("orientation").equals("vertical");
-                    config.close();
-                }
-                catch (IOException e){
-                    vertical = false;
-                }
-
-                Intent i = new Intent(MainActivity.this, GameActivity.class);
-                i.putExtra("vertical",vertical);
-                i.putExtra("gameDir",gameDir);
-                startActivity(i);
-            }
-        }).show();
 
         // Update UI
 
@@ -91,7 +52,7 @@ public class MainActivity extends AppCompatActivity {
         tvh.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                dlg.show();
+                listGames();
             }
         });
 
@@ -111,6 +72,46 @@ public class MainActivity extends AppCompatActivity {
         setContentView(v);
     }
 
+    private void listGames(){
+        if(Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)){
+
+            File sdCardDir = Environment.getExternalStorageDirectory();
+            actinidiaDir = new File(sdCardDir, "ActinidiaGames");
+            if(!actinidiaDir.exists()){
+                actinidiaDir.mkdir();           // create directories
+            }
+            gameList = actinidiaDir.list();     // list games
+
+            new AlertDialog.Builder(this)       // show dialog
+                    .setTitle(getString(R.string.choose_game))
+                    .setItems(gameList, dlg_listener).show();
+        }
+    }
+
+    private DialogInterface.OnClickListener dlg_listener = new DialogInterface.OnClickListener() {
+        @Override
+        public void onClick(DialogInterface dialog, int which) {
+                /* games menu */
+            gameDir = new File(actinidiaDir, gameList[which]);
+
+            try {
+                Reader config = new FileReader(new File(gameDir,"config.ini"));
+                Properties p = new Properties();
+                p.load(config);
+                vertical = p.getProperty("orientation").equals("vertical");
+                config.close();
+            }
+            catch (IOException e){
+                vertical = false;
+            }
+
+            Intent i = new Intent(MainActivity.this, GameActivity.class);
+            i.putExtra("vertical",vertical);
+            i.putExtra("gameDir",gameDir);
+            startActivity(i);
+        }
+    };
+
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -118,6 +119,7 @@ public class MainActivity extends AppCompatActivity {
             case PERMISSION_REQUEST_CODE:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
                     // obtained permission
+                    listGames();
                 } else {
                     // refused
                     Toast.makeText(this, R.string.warn, Toast.LENGTH_SHORT).show();

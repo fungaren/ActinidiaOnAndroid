@@ -18,7 +18,7 @@ int CreateImage(lua_State *L)
     if (n != 2) return 0;
     int width = (int)lua_tointeger(L, 1);
     int height = (int)lua_tointeger(L, 2);
-
+    lua_pop(L, 2);
     jobject g = api_env->CallObjectMethod(
             api_thiz, api_env->GetMethodID(jcls,"createImage","(II)Landroid/graphics/Bitmap;"),
             width, height);
@@ -35,6 +35,7 @@ int CreateImageEx(lua_State *L)
     int width = (int)lua_tointeger(L, 1);
     int height = (int)lua_tointeger(L, 2);
     LUA_INTEGER color = lua_tointeger(L, 3);
+    lua_pop(L, 3);
     jobject g = api_env->CallObjectMethod(
             api_thiz, api_env->GetMethodID(jcls,"createImageEx","(IIIII)Landroid/graphics/Bitmap;"),
             width, height, (char)color, (char)(color>>8), (char)(color>>16));
@@ -50,6 +51,7 @@ int CreateTransImage(lua_State *L)
     if (n != 2) return 0;
     int width = (int)lua_tointeger(L, 1);
     int height = (int)lua_tointeger(L, 2);
+    lua_pop(L, 2);
     jobject g = api_env->CallObjectMethod(
             api_thiz, api_env->GetMethodID(jcls,"createTransImage","(II)Landroid/graphics/Bitmap;"),
             width, height);
@@ -64,6 +66,7 @@ int DeleteImage(lua_State *L)
     int n = lua_gettop(L);
     if (n != 1) return 0;
     jobject g = (jobject)lua_tointeger(L, 1);
+    lua_pop(L, 1);
     api_env->DeleteGlobalRef(g);   // !!!
     return 0;
 }
@@ -87,6 +90,7 @@ int PrintText(lua_State *L)
                                           "(Landroid/graphics/Bitmap;FFLjava/lang/String;Ljava/lang/String;FIII)V"),
             g, x, y, jstr, jFontName, FontSize, (char)color, (char)(color>>8), (char)(color>>16)
     );
+    lua_pop(L, 7);
     lua_pushboolean(L, true);
     return 1;
 }
@@ -100,6 +104,7 @@ int GetWidth(lua_State *L)
     jint w = api_env->CallIntMethod(
             api_thiz, api_env->GetMethodID(jcls,"getWidth","(Landroid/graphics/Bitmap;)I"),
             g);
+    lua_pop(L, 1);
     lua_pushinteger(L, w);
     return 1;
 }
@@ -113,6 +118,7 @@ int GetHeight(lua_State *L)
     jint h = api_env->CallIntMethod(
             api_thiz, api_env->GetMethodID(jcls,"getHeight","(Landroid/graphics/Bitmap;)I"),
             g);
+    lua_pop(L, 1);
     lua_pushinteger(L, h);
     return 1;
 }
@@ -123,6 +129,7 @@ int GetText(lua_State *L)
     int n = lua_gettop(L);
     if (n != 1) return 0;
     const char* f = lua_tostring(L, 1);
+    lua_pop(L, 1);
     jstring jf = api_env->NewStringUTF(f);
     jstring jstr = (jstring)api_env->CallObjectMethod(
             api_thiz, api_env->GetMethodID(jcls,"getText","(Ljava/lang/String;)Ljava/lang/String;"),
@@ -146,6 +153,7 @@ int GetImage(lua_State *L)
     int n = lua_gettop(L);
     if (n != 1) return 0;
     const char* f = lua_tostring(L, 1);
+    lua_pop(L, 1);
     jstring jf = api_env->NewStringUTF(f);
     jobject img = (jobject)api_env->CallObjectMethod(
             api_thiz, api_env->GetMethodID(jcls,"getImage",
@@ -169,6 +177,7 @@ int GetSound(lua_State *L)
     const char* f = lua_tostring(L, 1);
     jstring jf = api_env->NewStringUTF(f);
     int b_loop = lua_toboolean(L, 2);
+    lua_pop(L, 2);
     jint sound = api_env->CallIntMethod(
             api_thiz, api_env->GetMethodID(jcls,"getSound",
                                            "(Ljava/lang/String;Z)I"),
@@ -197,6 +206,7 @@ int PasteToImage(lua_State *L)
     jobject gSrc = (jobject)lua_tointeger(L, 2);
     float x = (float)lua_tonumber(L, 3);
     float y = (float)lua_tonumber(L, 4);
+    lua_pop(L, 4);
     api_env->CallVoidMethod(
             api_thiz,api_env->GetMethodID(jcls,"pasteToImage",
                                           "(Landroid/graphics/Bitmap;Landroid/graphics/Bitmap;FF)V"),
@@ -220,6 +230,7 @@ int PasteToImageEx(lua_State *L)
     int ySrc = (int)lua_tointeger(L, 8);
     int SrcWidth = (int)lua_tointeger(L, 9);
     int SrcHeight = (int)lua_tointeger(L, 10);
+    lua_pop(L, 10);
     api_env->CallVoidMethod(
             api_thiz,api_env->GetMethodID(jcls,"pasteToImageEx",
                                           "(Landroid/graphics/Bitmap;Landroid/graphics/Bitmap;IIIIIIII)V"),
@@ -238,6 +249,7 @@ int AlphaBlend(lua_State *L)
     int xDest = (int)lua_tointeger(L, 3);
     int yDest = (int)lua_tointeger(L, 4);
     char SrcAlpha = (char)lua_tointeger(L, 5);
+    lua_pop(L, 5);
     api_env->CallVoidMethod(
             api_thiz,api_env->GetMethodID(jcls,"alphaBlend",
                                           "(Landroid/graphics/Bitmap;Landroid/graphics/Bitmap;III)V"),
@@ -262,6 +274,7 @@ int AlphaBlendEx(lua_State *L)
     int SrcWidth = (int)lua_tointeger(L, 9);
     int SrcHeight = (int)lua_tointeger(L, 10);
     char SrcAlpha = (char)lua_tointeger(L, 11);
+    lua_pop(L, 11);
     api_env->CallVoidMethod(
             api_thiz,api_env->GetMethodID(jcls,"alphaBlendEx",
                                           "(Landroid/graphics/Bitmap;Landroid/graphics/Bitmap;IIIIIIIII)V"),
@@ -278,6 +291,7 @@ int PasteToWnd(lua_State *L)
     if (n != 2) return 0;
     jobject WndGraphic = (jobject)lua_tointeger(L, 1);
     jobject g = (jobject)lua_tointeger(L, 2);
+    lua_pop(L, 2);
     api_env->CallVoidMethod(
             api_thiz,api_env->GetMethodID(jcls,"pasteToWnd",
                                           "(Landroid/graphics/Canvas;Landroid/graphics/Bitmap;)V"),
@@ -301,6 +315,7 @@ int PasteToWndEx(lua_State *L)
     int ySrc = (int)lua_tointeger(L, 8);
     int SrcWidth = (int)lua_tointeger(L, 9);
     int SrcHeight = (int)lua_tointeger(L, 10);
+    lua_pop(L, 10);
     api_env->CallVoidMethod(
             api_thiz,api_env->GetMethodID(jcls,"pasteToWndEx",
                                           "(Landroid/graphics/Canvas;Landroid/graphics/Bitmap;IIIIIIII)V"),
@@ -315,6 +330,7 @@ int StopSound(lua_State *L)
     int n = lua_gettop(L);
     if (n != 1) return 0;
     jint sound = (jint)lua_tointeger(L, 1);
+    lua_pop(L, 1);
     api_env->CallVoidMethod(
             api_thiz,api_env->GetMethodID(jcls,"stopSound", "(I)V"), sound);
     return 0;
@@ -327,6 +343,7 @@ int SetVolume(lua_State *L)
     if (n != 2) return 0;
     jint sound = (jint)lua_tointeger(L, 1);
     float volume = (float)lua_tonumber(L, 2);
+    lua_pop(L, 2);
     api_env->CallVoidMethod(
             api_thiz,api_env->GetMethodID(jcls,"setVolume", "(IF)V"), sound, volume);
     return 0;
@@ -338,6 +355,7 @@ int PlaySound(lua_State *L)
     int n = lua_gettop(L);
     if (n != 1) return 0;
     jint sound = (jint)lua_tointeger(L, 1);
+    lua_pop(L, 1);
     api_env->CallVoidMethod(
             api_thiz,api_env->GetMethodID(jcls,"playSound", "(I)V"), sound);
     return 0;
@@ -349,6 +367,7 @@ int GetSetting(lua_State *L)
     int n = lua_gettop(L);
     if (n != 1) return 0;
     const char* key = lua_tostring(L, 1);
+    lua_pop(L, 1);
     jstring jkey = api_env->NewStringUTF(key);
     jstring jval = (jstring)api_env->CallObjectMethod(
             api_thiz, api_env->GetMethodID(jcls,"getSetting",
@@ -373,6 +392,7 @@ int SaveSetting(lua_State *L)
     if (n != 2) return 0;
     const char* key = lua_tostring(L, 1);
     const char* val = lua_tostring(L, 2);
+    lua_pop(L, 2);
     jstring jkey = api_env->NewStringUTF(key);
     jstring jval = api_env->NewStringUTF(val);
     api_env->CallVoidMethod(

@@ -38,6 +38,7 @@ import java.util.TimerTask;
 public class GameActivity extends Activity {
     private SurfaceView sfv;
     private SurfaceHolder sfh;
+    private Boolean initialized = false;
 
     static {
         System.loadLibrary("lua-lib");
@@ -45,7 +46,7 @@ public class GameActivity extends Activity {
     }
 
     private File gameDir;
-    private boolean vertical=false; // in "res/config.ini"
+    private boolean vertical = false; // in "res/config.ini"
 
     private Timer timer;     // produce refresh message
     private SoundPool sp;
@@ -62,107 +63,93 @@ public class GameActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Intent i = getIntent();
-        if(i != null){
+        if(i != null) {
             gameDir = (File)i.getSerializableExtra("gameDir");
-            vertical = i.getBooleanExtra("vertical", false);
-        } else if (savedInstanceState != null){
-            gameDir = (File)savedInstanceState.getSerializable("gameDir");
-            vertical = savedInstanceState.getBoolean("vertical", false);
-        }
-        int toset = vertical?ActivityInfo.SCREEN_ORIENTATION_PORTRAIT:ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
-        if(getRequestedOrientation()!=toset){
-            if(!vertical){
-                setRequestedOrientation(toset);
-                return;
+            vertical = i.getBooleanExtra("vertical", false);    // horizontal for default
+            if(!vertical) {                  // a new activity is vertical
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
             }
         }
 
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
+        // Load settings
+        data_file = new File(gameDir, "data");
+        prop = new Properties();
+        try {
+            Reader data_reader = new FileReader(data_file);
+            prop.load(data_reader);
+            data_reader.close();
+        }catch(IOException e){}
+
+        // init SoundPool
+        sp = new SoundPool.Builder().setMaxStreams(255).build();
+        sound_list = new HashMap<>();
+        sp.setOnLoadCompleteListener(new SoundPool.OnLoadCompleteListener() {
+            @Override
+            public void onLoadComplete(SoundPool soundPool, int i, int i1) {
+                if(sound_list.get(i)) sp.play(i,1,1,1,0,1); // if loop, auto-play
+            }
+        });
+
+        // set SurfaceView
         sfv = new SurfaceView(this);
         sfh = sfv.getHolder();
         sfh.addCallback(new SurfaceHolder.Callback2() {
             @Override
-            public void surfaceRedrawNeeded(SurfaceHolder surfaceHolder) { }
+            public void surfaceRedrawNeeded(SurfaceHolder surfaceHolder) {}
             @Override
             public void surfaceCreated(SurfaceHolder surfaceHolder) {
-                // Load settings
-                data_file = new File(gameDir, "data");
-                prop = new Properties();
-                try {
-                    Reader data_reader = new FileReader(data_file);
-                    prop.load(data_reader);
-                    data_reader.close();
-                }catch(IOException e){
+                if (!initialized) {
+                    // Lua init & Launch
+                    String err = OnCreate();
 
-                }
-
-                // init SoundPool
-                sp = new SoundPool.Builder().setMaxStreams(255).build();
-                sound_list = new HashMap<>();
-                sp.setOnLoadCompleteListener(new SoundPool.OnLoadCompleteListener() {
-                    @Override
-                    public void onLoadComplete(SoundPool soundPool, int i, int i1) {
-                    if(sound_list.get(i)) sp.play(i,1,1,1,0,1); // if loop, auto-play
+                    if (!err.isEmpty()) {
+                        Toast.makeText(GameActivity.this, err, Toast.LENGTH_LONG).show();
+                        GameActivity.this.finish();     // display error and exit
                     }
-                });
-
-                String err = OnCreate();            // launch game
-
-                if (!err.isEmpty()){
-                    Toast.makeText(GameActivity.this, err, Toast.LENGTH_LONG).show();
-                    GameActivity.this.finish();
+                    initialized = true;
+                    setTimer();
                 }
-
-                // set timer
-                timer = new Timer();
-                timer.schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                    hRefresh.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            Canvas c = sfh.lockCanvas();
-                            OnPaint(c);                 // invoke OnPaint() in script
-                            sfh.unlockCanvasAndPost(c);
-                        }
-                    });
-                    }
-                }, 300, 19);       // period: 16.6667ms -> 60fps
             }
 
             @Override
-            public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) { }
+            public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) {}
             @Override
-            public void surfaceDestroyed(SurfaceHolder surfaceHolder) { }
+            public void surfaceDestroyed(SurfaceHolder surfaceHolder) {}
         });
-        // register message handler
+
+        // set message handler
         sfv.setOnTouchListener(new View.OnTouchListener() {
             float oldX = 0, oldY = 0;
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
-                // int i = motionEvent.getActionIndex();    // do not support multi-touch now
+                // int i = motionEvent.getActionIndex();
                 switch (motionEvent.getActionMasked()) {
-                    case MotionEvent.ACTION_DOWN:
-                            OnLButtonDown(motionEvent.getX(),motionEvent.getY());
+                    case MotionEvent.ACTION_DOWN:   // A primary pointer has gone down.
+                        OnLButtonDown(motionEvent.getX(0),motionEvent.getY(0));
                         break;
-                    case MotionEvent.ACTION_UP:
-                            OnLButtonUp(motionEvent.getX(),motionEvent.getY());
+                    case MotionEvent.ACTION_UP:     // A primary pointer has gone up.
+                        OnLButtonUp(motionEvent.getX(0),motionEvent.getY(0));
                         break;
-                    case MotionEvent.ACTION_MOVE:{
-                            float newX = motionEvent.getX();
-                            float newY = motionEvent.getY();
-                            // suppress
-                            if(Math.abs(newX-oldX)>6||Math.abs(newY-oldY)>6)
-                                OnMouseMove(newX,newY);
-                            oldX = newX;
-                            oldY = newY;
-                        break;}
-                    case MotionEvent.ACTION_POINTER_DOWN:
+                    case MotionEvent.ACTION_POINTER_DOWN:   // A non-primary pointer has gone down.
+                        OnLButtonDown(motionEvent.getX(1),motionEvent.getY(1));
                         break;
-                    case MotionEvent.ACTION_POINTER_UP:
+                    case MotionEvent.ACTION_POINTER_UP:     // A non-primary pointer has gone up.
+                        OnLButtonUp(motionEvent.getX(1),motionEvent.getY(1));
                         break;
+                    case MotionEvent.ACTION_MOVE:
+                    {
+                        float newX = motionEvent.getX(0);
+                        float newY = motionEvent.getY(0);
+                        // suppress
+                        if (Math.abs(newX-oldX)>4 || Math.abs(newY-oldY)>4)
+                            OnMouseMove(newX,newY);
+                        oldX = newX;
+                        oldY = newY;
+                        break;
+                    }
                 }
                 return true;
             }
@@ -170,11 +157,22 @@ public class GameActivity extends Activity {
         setContentView(sfv);
     }
 
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        outState.putBoolean("vertical", vertical);
-        outState.putSerializable("gameDir", gameDir);
-        super.onSaveInstanceState(outState);
+    private void setTimer()
+    {
+        timer = new Timer();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                hRefresh.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        Canvas c = sfh.lockCanvas();
+                        OnPaint(c);                 // invoke OnPaint() in script
+                        sfh.unlockCanvasAndPost(c);
+                    }
+                });
+            }
+        }, 300, 17);       // period: 16.6667ms -> 60fps
     }
 
     private void saveUserData()
@@ -188,31 +186,38 @@ public class GameActivity extends Activity {
         }
     }
 
-    private boolean backPressed =false;
     @Override
-    public void onBackPressed() {
-        timer.cancel();
-        timer = null;
-        OnClose();  // !
-        sp.release();
-        sp = null;
-        saveUserData();
-        backPressed = true;
-        super.onBackPressed();
+    protected void onDestroy() {
+        if (initialized) {
+            OnClose(); // !!!
+            saveUserData();
+
+            if(sp != null) {
+                sp.release();
+                sp = null;
+            }
+        }
+        super.onDestroy();
     }
 
     @Override
-    protected void onDestroy() {
-        if(timer != null) {
+    protected void onPause() {
+        if (initialized) {
             timer.cancel();
             timer = null;
-            if (!backPressed) OnClose(); // !!!
-            sp.release();
-            sp = null;
-            saveUserData();
-        }
 
-        super.onDestroy();
+            OnKillFocus();  // !
+        }
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        if (initialized) {
+            OnSetFocus();
+            setTimer();
+        }
+        super.onResume();
     }
 
     /**
@@ -353,4 +358,6 @@ public class GameActivity extends Activity {
     public native int OnLButtonDown(float x, float y);
     public native int OnLButtonUp(float x, float y);
     public native int OnMouseMove(float x, float y);
+    public native int OnSetFocus();
+    public native int OnKillFocus();
 }

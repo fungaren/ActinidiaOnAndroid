@@ -112,6 +112,8 @@ Java_cc_moooc_actinidia_GameActivity_OnClose(JNIEnv *env, jobject thiz){
     lua_getglobal(L, "OnClose");
     lua_pcall(L, 0, 0, 0);
     lua_close(L);
+
+    api_env->DeleteLocalRef(jcls);  // !!!
     return 0;
 }
 
@@ -127,6 +129,8 @@ Java_cc_moooc_actinidia_GameActivity_OnLButtonDown(JNIEnv *env, jobject thiz, jf
     lua_pushinteger(L, (int)x);
     lua_pushinteger(L, (int)y);
     lua_pcall(L, 2, 0, 0);
+
+    api_env->DeleteLocalRef(jcls);  // !!!
     return 0;
 }
 
@@ -142,6 +146,8 @@ Java_cc_moooc_actinidia_GameActivity_OnLButtonUp(JNIEnv *env, jobject thiz, jflo
     lua_pushinteger(L, (int)x);
     lua_pushinteger(L, (int)y);
     lua_pcall(L, 2, 0, 0);
+
+    api_env->DeleteLocalRef(jcls);  // !!!
     return 0;
 }
 
@@ -157,5 +163,37 @@ Java_cc_moooc_actinidia_GameActivity_OnMouseMove(JNIEnv *env, jobject thiz, jflo
     lua_pushinteger(L, (int)x);
     lua_pushinteger(L, (int)y);
     lua_pcall(L, 2, 0, 0);
+
+    api_env->DeleteLocalRef(jcls);  // !!!
+    return 0;
+}
+
+// lua: void OnSetFocus()
+extern "C"
+JNIEXPORT jint JNICALL
+Java_cc_moooc_actinidia_GameActivity_OnSetFocus(JNIEnv *env, jobject thiz){
+    api_env = env;
+    api_thiz = thiz;
+    jcls = api_env->GetObjectClass(api_thiz);         // !!!
+
+    lua_getglobal(L, "OnSetFocus");
+    lua_pcall(L, 0, 0, 0);
+
+    api_env->DeleteLocalRef(jcls);  // !!!
+    return 0;
+}
+
+// lua: void OnKillFocus()
+extern "C"
+JNIEXPORT jint JNICALL
+Java_cc_moooc_actinidia_GameActivity_OnKillFocus(JNIEnv *env, jobject thiz){
+    api_env = env;
+    api_thiz = thiz;
+    jcls = api_env->GetObjectClass(api_thiz);         // !!!
+
+    lua_getglobal(L, "OnKillFocus");
+    lua_pcall(L, 0, 0, 0);
+
+    api_env->DeleteLocalRef(jcls);  // !!!
     return 0;
 }

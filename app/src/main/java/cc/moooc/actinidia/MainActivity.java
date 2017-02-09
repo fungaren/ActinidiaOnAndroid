@@ -27,7 +27,6 @@ public class MainActivity extends AppCompatActivity {
     private File actinidiaDir;  // sdcard/ActinidiaGames
     private String[] gameList;  // game folders
     private File gameDir;       // eg. ActinidiaGames/res-rpg
-    private boolean vertical;
 
     private static final int PERMISSION_REQUEST_CODE = 1;
 
@@ -38,15 +37,16 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // Permission's check
         if (PackageManager.PERMISSION_GRANTED == ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
             // available
             listGames();
         } else {
+            // Request for permission
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSION_REQUEST_CODE);
         }
 
         // Update UI
-
         View v = getLayoutInflater().inflate(R.layout.layout_main,null,true);
         Button tvh = (Button)v.findViewById(R.id.button_choose);
         tvh.setOnClickListener(new View.OnClickListener() {
@@ -91,9 +91,9 @@ public class MainActivity extends AppCompatActivity {
     private DialogInterface.OnClickListener dlg_listener = new DialogInterface.OnClickListener() {
         @Override
         public void onClick(DialogInterface dialog, int which) {
-                /* games menu */
+            // Directory of the selected game
             gameDir = new File(actinidiaDir, gameList[which]);
-
+            boolean vertical;
             try {
                 Reader config = new FileReader(new File(gameDir,"config.ini"));
                 Properties p = new Properties();
@@ -101,10 +101,13 @@ public class MainActivity extends AppCompatActivity {
                 vertical = p.getProperty("orientation").equals("vertical");
                 config.close();
             }
-            catch (IOException e){
+            catch (IOException e) {
                 vertical = false;
             }
 
+            dialog.dismiss();       // Must dismiss the dialog before goto another activity
+
+            // Game start
             Intent i = new Intent(MainActivity.this, GameActivity.class);
             i.putExtra("vertical",vertical);
             i.putExtra("gameDir",gameDir);

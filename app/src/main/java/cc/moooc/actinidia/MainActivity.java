@@ -98,7 +98,7 @@ public class MainActivity extends AppCompatActivity {
                 Reader config = new FileReader(new File(gameDir,"config.ini"));
                 Properties p = new Properties();
                 p.load(config);
-                vertical = p.getProperty("orientation").equals("vertical");
+                vertical = p.getProperty("orientation","horizontal").equals("vertical");
                 config.close();
             }
             catch (IOException e) {

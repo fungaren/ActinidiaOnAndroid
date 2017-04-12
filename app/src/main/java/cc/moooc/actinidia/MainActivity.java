@@ -5,15 +5,14 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.os.Environment;
 import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
@@ -36,43 +35,41 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // Permission's check
-        if (PackageManager.PERMISSION_GRANTED == ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-            // available
-            listGames();
-        } else {
-            // Request for permission
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSION_REQUEST_CODE);
-        }
-
         // Update UI
         View v = getLayoutInflater().inflate(R.layout.layout_main,null,true);
-        Button tvh = (Button)v.findViewById(R.id.button_choose);
-        tvh.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                listGames();
-            }
-        });
-
-        String version = "";
-        try { version = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;}
-        catch(Exception e) {e.printStackTrace();}
-        TextView tver = (TextView)v.findViewById(R.id.textView_version);
-        tver.setText(version);
-
-        TextView tvg = (TextView)v.findViewById(R.id.textView_github);
-        tvg.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/mooction/actinidiaonandroid")));
-            }
-        });
         setContentView(v);
     }
 
-    private void listGames(){
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_main,menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.menu_local:
+                // Permission's check
+                if (PackageManager.PERMISSION_GRANTED == ContextCompat.checkSelfPermission(
+                        MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                    // available
+                    listLocalGames();
+                } else {
+                    // Request for permission
+                    ActivityCompat.requestPermissions(MainActivity.this,
+                            new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSION_REQUEST_CODE);
+                }
+                break;
+            case R.id.menu_about:
+                Intent i = new Intent(this,AboutActivity.class);
+                startActivity(i);
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void listLocalGames(){
         if(Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)){
 
             File sdCardDir = Environment.getExternalStorageDirectory();
@@ -105,7 +102,7 @@ public class MainActivity extends AppCompatActivity {
                 vertical = false;
             }
 
-            dialog.dismiss();       // Must dismiss the dialog before goto another activity
+            dialog.dismiss();       // Dismiss the dialog before goto another activity
 
             // Game start
             Intent i = new Intent(MainActivity.this, GameActivity.class);
@@ -122,7 +119,7 @@ public class MainActivity extends AppCompatActivity {
             case PERMISSION_REQUEST_CODE:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
                     // obtained permission
-                    listGames();
+                    listLocalGames();
                 } else {
                     // refused
                     Toast.makeText(this, R.string.warn, Toast.LENGTH_SHORT).show();

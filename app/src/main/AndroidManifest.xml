@@ -22,6 +22,8 @@
             android:configChanges="screenSize|orientation">
 
         </activity>
+        <activity android:name=".AboutActivity"
+            android:parentActivityName=".MainActivity"/>
     </application>
 
 </manifest>

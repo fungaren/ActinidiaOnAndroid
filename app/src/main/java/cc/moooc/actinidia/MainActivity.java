@@ -25,17 +25,12 @@ public class MainActivity extends AppCompatActivity {
 
     private File actinidiaDir;  // sdcard/ActinidiaGames
     private String[] gameList;  // game folders
-    private File gameDir;       // eg. ActinidiaGames/res-rpg
 
     private static final int PERMISSION_REQUEST_CODE = 1;
 
-    /**
-     * Preparation
-     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Update UI
         View v = getLayoutInflater().inflate(R.layout.layout_main,null,true);
         setContentView(v);
     }
@@ -88,29 +83,36 @@ public class MainActivity extends AppCompatActivity {
     private DialogInterface.OnClickListener dlg_listener = new DialogInterface.OnClickListener() {
         @Override
         public void onClick(DialogInterface dialog, int which) {
+            // Dismiss the dialog before goto another activity
+            dialog.dismiss();
             // Directory of the selected game
-            gameDir = new File(actinidiaDir, gameList[which]);
-            boolean vertical;
-            try {
-                Reader config = new FileReader(new File(gameDir,"config.ini"));
-                Properties p = new Properties();
-                p.load(config);
-                vertical = p.getProperty("orientation","horizontal").equals("vertical");
-                config.close();
-            }
-            catch (IOException e) {
-                vertical = false;
-            }
-
-            dialog.dismiss();       // Dismiss the dialog before goto another activity
-
-            // Game start
-            Intent i = new Intent(MainActivity.this, GameActivity.class);
-            i.putExtra("vertical",vertical);
-            i.putExtra("gameDir",gameDir);
-            startActivity(i);
+            launchGame(new File(actinidiaDir, gameList[which]));
         }
     };
+
+    /**
+     * Play in GameActivity
+     * @param gameDir eg. ActinidiaGames/res-rpg
+     */
+    private void launchGame(File gameDir){
+        boolean vertical;
+        try {
+            Reader config = new FileReader(new File(gameDir,"config.ini"));
+            Properties p = new Properties();
+            p.load(config);
+            vertical = p.getProperty("orientation","horizontal").equals("vertical");
+            config.close();
+        }
+        catch (IOException e) {
+            vertical = false;
+        }
+
+        // Game start
+        Intent i = new Intent(MainActivity.this, GameActivity.class);
+        i.putExtra("vertical",vertical);
+        i.putExtra("gameDir",gameDir);
+        startActivity(i);
+    }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {

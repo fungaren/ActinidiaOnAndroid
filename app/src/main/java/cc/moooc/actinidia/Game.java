@@ -12,8 +12,10 @@ public class Game {
     private String version;
     private int star;
     private String key;
+    private int size;
 
-    public Game(String name, String description, String author, String date, String version, int star, String key) {
+    public Game(String name, String description, String author, String date,
+                String version, int star, String key, int size) {
         this.name = name;
         this.description = description;
         this.author = author;
@@ -21,5 +23,6 @@ public class Game {
         this.version = version;
         this.star = star;
         this.key = key;
+        this.size = size;
     }
 }

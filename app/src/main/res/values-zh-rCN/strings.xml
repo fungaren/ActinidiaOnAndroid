@@ -5,4 +5,5 @@
     <string name="tip">确保已经添加SD卡访问权限</string>
     <string name="warn">请提供SD卡访问权限！</string>
     <string name="github">Github</string>
+    <string name="no_network">无网络访问!</string>
 </resources>

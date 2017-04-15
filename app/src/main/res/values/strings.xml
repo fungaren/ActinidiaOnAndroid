@@ -1,7 +1,9 @@
+
 <resources>
     <string name="app_name">Actinidia</string>
     <string name="choose_game">Select a game</string>
     <string name="tip">Make sure your have provided \nsdCard access permission.</string>
     <string name="warn">Please provide SD Card access permission!</string>
     <string name="github">Github</string>
+    <string name="no_network">No network!</string>
 </resources>

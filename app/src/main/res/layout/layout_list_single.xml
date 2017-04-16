@@ -1,28 +1,66 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/linearLayout_game"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="4dp"
-    android:elevation="5dp"
-    android:orientation="vertical">
+    android:background="@android:color/white"
+    android:elevation="2dp"
+    android:orientation="vertical"
+    android:paddingBottom="8dp"
+    android:paddingTop="12dp">
+
+    <TextView
+        android:id="@+id/textView_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingLeft="8dp"
+        android:paddingRight="8dp"
+        android:text="TextView"
+        android:textColor="?attr/editTextColor"
+        android:textSize="18sp" />
 
     <ImageView
         android:id="@+id/imageView_banner"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:srcCompat="@android:color/darker_gray" />
+        android:adjustViewBounds="true"
+        android:paddingBottom="8dp"
+        android:paddingTop="8dp"
+        app:srcCompat="?android:attr/colorBackground" />
 
     <TextView
         android:id="@+id/textView_description"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="TextView" />
+        android:paddingLeft="8dp"
+        android:paddingRight="8dp"
+        android:text="TextView"
+        android:textColor="?attr/editTextColor" />
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="horizontal">
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingLeft="8dp"
+        android:paddingRight="9dp">
+
+        <TextView
+            android:id="@+id/textView_game_version"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_weight="100"
+            android:text="TextView" />
+
+        <TextView
+            android:id="@+id/textView_date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_weight="100"
+            android:text="TextView" />
 
         <RatingBar
             android:id="@+id/ratingBar_star"
@@ -35,29 +73,41 @@
             android:rating="1"
             android:stepSize="1" />
 
-        <TextView
-            android:id="@+id/textView_date"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_weight="100"
-            android:text="TextView" />
+    </LinearLayout>
 
-        <TextView
-            android:id="@+id/textView_version"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_weight="100"
-            android:text="TextView" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="horizontal">
 
         <Button
-            android:id="@+id/button_action"
+            android:id="@+id/button_get_buy"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
             android:layout_weight="1"
             android:text="Button" />
+
+        <Button
+            android:id="@+id/button_update"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/update" />
+
+        <Button
+            android:id="@+id/button_delete"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/delete" />
+
+        <Button
+            android:id="@+id/button_run"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/run" />
     </LinearLayout>
 
 </LinearLayout>

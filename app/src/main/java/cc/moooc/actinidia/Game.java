@@ -25,4 +25,36 @@ public class Game {
         this.key = key;
         this.size = size;
     }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public String getAuthor() {
+        return author;
+    }
+
+    public String getDate() {
+        return date;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public int getStar() {
+        return star;
+    }
+
+    public String getKey() {
+        return key;
+    }
+
+    public int getSize() {
+        return size;
+    }
 }

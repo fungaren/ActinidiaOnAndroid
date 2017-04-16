@@ -6,4 +6,10 @@
     <string name="warn">Please provide SD Card access permission!</string>
     <string name="github">Github</string>
     <string name="no_network">No network!</string>
+    <string name="buy">Buy</string>
+    <string name="get">Get</string>
+    <string name="download">Download</string>
+    <string name="update">Update</string>
+    <string name="delete">Delete</string>
+    <string name="run">Run</string>
 </resources>

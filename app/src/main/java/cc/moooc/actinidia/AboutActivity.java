@@ -21,7 +21,7 @@ public class AboutActivity extends AppCompatActivity {
         String version = "";
         try { version = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;}
         catch(Exception e) {e.printStackTrace();}
-        TextView tver = (TextView)v.findViewById(R.id.textView_version);
+        TextView tver = (TextView)v.findViewById(R.id.textView_app_version);
         tver.setText(version);
 
         TextView tvg = (TextView)v.findViewById(R.id.textView_github);

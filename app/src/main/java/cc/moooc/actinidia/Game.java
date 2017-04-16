@@ -5,6 +5,7 @@ package cc.moooc.actinidia;
  */
 
 public class Game {
+    private int id;
     private String name;
     private String description;
     private String author;
@@ -14,8 +15,9 @@ public class Game {
     private String key;
     private int size;
 
-    public Game(String name, String description, String author, String date,
+    public Game(int id, String name, String description, String author, String date,
                 String version, int star, String key, int size) {
+        this.id = id;
         this.name = name;
         this.description = description;
         this.author = author;
@@ -24,6 +26,10 @@ public class Game {
         this.star = star;
         this.key = key;
         this.size = size;
+    }
+
+    public int getId() {
+        return id;
     }
 
     public String getName() {

@@ -21,8 +21,12 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RatingBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,6 +36,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -39,7 +44,15 @@ import java.util.List;
  */
 public class GameListFragment extends ListFragment {
     private List<Game> games = new ArrayList<>();
+    private List<Integer> assets = new ArrayList<>();
     private GameArrayAdapter adapter;
+
+    private static String ASSET_FILE = "asset.txt";
+    private static String CACHE_FILE = "cache.txt";
+    private static String BANNER_IMG = "/banner.jpg";
+    private static String GAME_LIST_URL = "http://moooc.cc/games.php";
+    private static String GAME_PATH_URL = "http://moooc.cc/games/";
+    private static String GAME_ZIP = "/game.zip";
 
     private class GameArrayAdapter extends BaseAdapter {
         private List<Game> games;
@@ -66,83 +79,85 @@ public class GameListFragment extends ListFragment {
 
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
-            if (null == convertView){
-                convertView = getActivity().getLayoutInflater().inflate(R.layout.layout_list_single,parent,false);
-                ViewOutlineProvider viewOutlineProvider = new ViewOutlineProvider() {
-                    @Override
-                    public void getOutline(View view, Outline outline) {
-                        outline.setRect(0, 0, view.getWidth(), view.getHeight());
-                    }
-                };
-                LinearLayout layout = (LinearLayout)convertView.findViewById(R.id.linearLayout_game);
-                layout.setOutlineProvider(viewOutlineProvider);
+            if (null == convertView) {
+                convertView = getActivity().getLayoutInflater().inflate(R.layout.layout_list_single, parent, false);
+            }
+            ViewOutlineProvider viewOutlineProvider = new ViewOutlineProvider() {
+                @Override
+                public void getOutline(View view, Outline outline) {
+                    outline.setRect(0, 0, view.getWidth(), view.getHeight());
+                }
+            };
+            LinearLayout layout = (LinearLayout)convertView.findViewById(R.id.linearLayout_game);
+            layout.setOutlineProvider(viewOutlineProvider);
 
-                Game game = games.get(position);
+            Game game = games.get(position);
 
-                ImageView iv = (ImageView)convertView.findViewById(R.id.imageView_banner);
-                InputStream in = null;
-                try {
-                    // load cache
-                    in = getActivity().openFileInput(game.getName() + ".png");
-                    iv.setImageBitmap(BitmapFactory.decodeStream(in));
-                } catch (FileNotFoundException e) {
-                    ImageAsyncLoad async = new ImageAsyncLoad("http://moooc.cc/games/"+position+"/banner.jpg",iv,game.getName());
-                    async.execute();
-                } finally {
-                    if (in != null) {
-                        try {
-                            in.close();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
+            ImageView iv = (ImageView)convertView.findViewById(R.id.imageView_banner);
+            InputStream in = null;
+            try {
+                // load image cache
+                in = getActivity().openFileInput(game.getId() + ".png");
+                iv.setImageBitmap(BitmapFactory.decodeStream(in));
+            } catch (FileNotFoundException e) {
+                // download image
+                ImageAsyncLoad async = new ImageAsyncLoad(GAME_PATH_URL+game.getId()+BANNER_IMG,iv,game.getId());
+                async.execute();
+            } finally {
+                if (in != null) {
+                    try {
+                        in.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
                 }
-
-                RatingBar rate = (RatingBar)convertView.findViewById(R.id.ratingBar_star);
-                rate.setRating(game.getStar());
-
-                TextView tv_name = (TextView)convertView.findViewById(R.id.textView_name);
-                tv_name.setText(game.getName());
-
-                TextView tv_version = (TextView)convertView.findViewById(R.id.textView_game_version);
-                tv_version.setText(game.getVersion());
-
-                TextView tv_description = (TextView)convertView.findViewById(R.id.textView_description);
-                tv_description.setText(game.getDescription());
-
-                TextView tv_date = (TextView)convertView.findViewById(R.id.textView_date);
-                tv_date.setText(game.getDate());
-
-                Button button_get_buy = (Button)convertView.findViewById(R.id.button_get_buy);
-                button_get_buy.setText(getString(game.getKey().equals("no")?R.string.get:R.string.buy));
-                button_get_buy.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-
-                    }
-                });
-                Button button_update = (Button)convertView.findViewById(R.id.button_update);
-                button_update.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-
-                    }
-                });
-                Button button_delete = (Button)convertView.findViewById(R.id.button_delete);
-                button_delete.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-
-                    }
-                });
-                Button button_run = (Button)convertView.findViewById(R.id.button_run);
-                button_run.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-
-                    }
-                });
             }
+
+            RatingBar rate = (RatingBar)convertView.findViewById(R.id.ratingBar_star);
+            rate.setRating(game.getStar());
+
+            TextView tv_name = (TextView)convertView.findViewById(R.id.textView_name);
+            tv_name.setText(game.getName());
+
+            TextView tv_version = (TextView)convertView.findViewById(R.id.textView_game_version);
+            tv_version.setText(game.getVersion());
+
+            TextView tv_description = (TextView)convertView.findViewById(R.id.textView_description);
+            tv_description.setText(game.getDescription());
+
+            TextView tv_date = (TextView)convertView.findViewById(R.id.textView_date);
+            tv_date.setText(game.getDate());
+
+            Button button_get_buy = (Button)convertView.findViewById(R.id.button_get_buy);
+            button_get_buy.setText(getString(game.getKey().equals("no")?R.string.get:R.string.buy));
+            button_get_buy.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+
+                }
+            });
+            Button button_update = (Button)convertView.findViewById(R.id.button_update);
+            button_update.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+
+                }
+            });
+            Button button_delete = (Button)convertView.findViewById(R.id.button_delete);
+            button_delete.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+
+                }
+            });
+            Button button_run = (Button)convertView.findViewById(R.id.button_run);
+            button_run.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+
+                }
+            });
+
             return convertView;
         }
     }
@@ -176,39 +191,28 @@ public class GameListFragment extends ListFragment {
 
         @Override
         protected Void doInBackground(Void... v) {
-            String game_list_str = HttpUtil.getHttpContent("http://moooc.cc/games.php","utf-8");
-            if (game_list_str.isEmpty()) return null;
-            int begin=0,end;
-            while((end = game_list_str.indexOf("\n\n",begin))>0) {
-                String s = game_list_str.substring(begin,end);
-                begin = end+2;
-                int p = s.indexOf('=');
-                if (p<0) break;
-                int e = s.indexOf('\n',p);
-                String info_name = s.substring(p+1,e);
-                p = s.indexOf('=',e);
-                e = s.indexOf('\n',p);
-                String info_description = s.substring(p+1,e);
-                p = s.indexOf('=',e);
-                e = s.indexOf('\n',p);
-                String info_author = s.substring(p+1,e);
-                p = s.indexOf('=',e);
-                e = s.indexOf('\n',p);
-                String info_date = s.substring(p+1,e);
-                p = s.indexOf('=',e);
-                e = s.indexOf('\n',p);
-                String info_version = s.substring(p+1,e);
-                p = s.indexOf('=',e);
-                e = s.indexOf('\n',p);
-                String info_star = s.substring(p+1,e);
-                p = s.indexOf('=',e);
-                e = s.indexOf('\n',p);
-                String info_key = s.substring(p+1,e);
-                p = s.indexOf('=',e);
-                String info_size = s.substring(p+1,s.length());
-                games.add(new Game(info_name, info_description, info_author, info_date, info_version,
-                        Integer.parseInt(info_star), info_key, Integer.parseInt(info_size)));
+            String game_list_str = HttpUtil.getHttpContent(GAME_LIST_URL,"utf-8");
+
+            if (game_list_str.isEmpty())
+                return null;
+
+            // Cache
+            OutputStream out = null;
+            try {
+                out = getActivity().openFileOutput(CACHE_FILE, Context.MODE_PRIVATE);
+                out.write(game_list_str.getBytes());
+            } catch (IOException e){
+                e.printStackTrace();
+            } finally {
+                if (out != null) {
+                    try {out.close();}
+                    catch (IOException e)
+                    {e.printStackTrace();}
+                }
             }
+
+            games.clear();
+            GameListFragment.parseRespond(game_list_str, games);
             return null;
         }
     }
@@ -217,13 +221,13 @@ public class GameListFragment extends ListFragment {
     private class ImageAsyncLoad extends AsyncTask<Void,Void,Void> {
         private String imageURL;
         private Bitmap bmp = null;
-        private String name;
+        private int id;
         private ImageView iv;
 
-        public ImageAsyncLoad(String imageURL, ImageView iv, String game_name) {
+        public ImageAsyncLoad(String imageURL, ImageView iv, int game_id) {
             super();
             this.imageURL = imageURL;
-            this.name = game_name;
+            this.id = game_id;
             this.iv = iv;
         }
 
@@ -251,7 +255,7 @@ public class GameListFragment extends ListFragment {
                 // image cache
                 OutputStream out = null;
                 try {
-                    out = getActivity().openFileOutput(name + ".png", Context.MODE_PRIVATE);
+                    out = getActivity().openFileOutput(id + ".png", Context.MODE_PRIVATE);
                     bmp.compress(Bitmap.CompressFormat.PNG, 100, out);
                 } catch (IOException e){
                     e.printStackTrace();
@@ -267,6 +271,48 @@ public class GameListFragment extends ListFragment {
         }
     }
 
+    /**
+     * Parse http respond to List. Remove all '\r' automatically.
+     * @param game_list_str string to parse
+     * @param games List
+     */
+    static void parseRespond(String game_list_str, List<Game> games) {
+        int id=0,begin=0,end;
+        game_list_str = game_list_str.replaceAll("\r","");
+        while((end = game_list_str.indexOf("\n\n",begin))>0) {
+            String s = game_list_str.substring(begin, end);
+            begin = end + 2;
+            int p = s.indexOf('=');
+            if (p < 0) break;
+            int e = s.indexOf('\n', p);
+            String info_name = s.substring(p + 1, e);
+            p = s.indexOf('=', e);
+            e = s.indexOf('\n', p);
+            String info_description = s.substring(p + 1, e);
+            p = s.indexOf('=', e);
+            e = s.indexOf('\n', p);
+            String info_author = s.substring(p + 1, e);
+            p = s.indexOf('=', e);
+            e = s.indexOf('\n', p);
+            String info_date = s.substring(p + 1, e);
+            p = s.indexOf('=', e);
+            e = s.indexOf('\n', p);
+            String info_version = s.substring(p + 1, e);
+            p = s.indexOf('=', e);
+            e = s.indexOf('\n', p);
+            String info_star = s.substring(p + 1, e);
+            p = s.indexOf('=', e);
+            e = s.indexOf('\n', p);
+            String info_key = s.substring(p + 1, e);
+            p = s.indexOf('=', e);
+            String info_size = s.substring(p + 1, s.length());
+            games.add(new Game(id, info_name, info_description, info_author, info_date, info_version,
+                    Integer.parseInt(info_star), info_key, Integer.parseInt(info_size)));
+            ++id;
+        }
+        Collections.reverse(games);
+    }
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -274,7 +320,52 @@ public class GameListFragment extends ListFragment {
         adapter = new GameArrayAdapter(games);
         this.setListAdapter(adapter);
 
-        // Load articles
+        // Load asset
+        InputStream asset_in = null;
+        try {
+            asset_in = getActivity().openFileInput(ASSET_FILE);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(asset_in));
+            String line;
+            while ((line = reader.readLine())!=null) {
+                assets.add(Integer.parseInt(line));
+            }
+        } catch (IOException e){
+
+        } finally {
+            if (asset_in != null) {
+                try {
+                    asset_in.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        // Load game list cache
+        InputStream in = null;
+        try {
+            in = getActivity().openFileInput(CACHE_FILE);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+            char[] bytes = new char[1024];
+            StringBuilder sb = new StringBuilder();
+            int size;
+            while ((size=reader.read(bytes))>0) {
+                sb.append(bytes,0,size);
+            }
+            parseRespond(sb.toString(),games);
+        } catch (IOException e) {
+
+        } finally {
+            if (in != null) {
+                try {
+                    in.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        // Get game list
         GameAsyncLoad async = new GameAsyncLoad(games,adapter);
         async.execute();
     }
@@ -283,6 +374,27 @@ public class GameListFragment extends ListFragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_list,container,false);
         return v;
+    }
+
+    @Override
+    public void onPause() {
+        // Save assets
+        OutputStream out = null;
+        try {
+            out = getActivity().openFileOutput(CACHE_FILE, Context.MODE_PRIVATE);
+            for (Integer i : assets) {
+                out.write(i.toString().getBytes());
+            }
+        } catch (IOException e){
+            e.printStackTrace();
+        } finally {
+            if (out != null) {
+                try {out.close();}
+                catch (IOException e)
+                {e.printStackTrace();}
+            }
+        }
+        super.onPause();
     }
 }
 
@@ -295,7 +407,6 @@ class HttpUtil {
      */
     public static String getHttpContent(String url, String charset) {
         HttpURLConnection connection = null;
-        String content = "";
         try {
             connection = (HttpURLConnection)new URL(url).openConnection();
             connection.setRequestMethod("GET");
@@ -304,18 +415,19 @@ class HttpUtil {
             connection.getResponseCode();
             InputStream in = connection.getInputStream();
             BufferedReader reader = new BufferedReader(new InputStreamReader(in, charset));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                content+=line;
-                content+='\n';
+            StringBuilder sb = new StringBuilder();
+            char[] bytes = new char[1024];
+            int size;
+            while ((size=reader.read(bytes))>0) {
+                sb.append(bytes,0,size);
             }
-            return content;
+            return sb.toString();
         } catch (MalformedURLException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
-            if(connection !=null){
+            if(connection !=null) {
                 connection.disconnect();
             }
         }

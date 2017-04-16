@@ -7,12 +7,12 @@ import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 
 /**
  * AboutActivity
  */
-
 public class AboutActivity extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -32,6 +32,15 @@ public class AboutActivity extends AppCompatActivity {
             }
         });
 
+        Button btn_bbs = (Button)v.findViewById(R.id.button_bbs);
+        btn_bbs.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("http://bbs.moooc.cc")));
+            }
+        });
+
+        setContentView(v);
         super.onCreate(savedInstanceState);
     }
 

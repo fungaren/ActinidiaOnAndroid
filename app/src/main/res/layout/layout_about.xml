@@ -8,10 +8,11 @@
         android:id="@+id/imageView_logo"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="169dp"
+        android:background="@mipmap/ic_launcher"
         app:srcCompat="@mipmap/ic_launcher"
         android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="134dp" />
+        android:layout_centerHorizontal="true" />
 
     <TextView
         android:id="@+id/textView_app_version"
@@ -19,18 +20,36 @@
         android:layout_height="wrap_content"
         android:text="version"
         android:textAlignment="center"
-        android:layout_marginTop="13dp"
-        android:layout_below="@+id/textView_github"
-        android:layout_alignParentStart="true" />
+        android:layout_below="@+id/imageView_logo"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="10dp" />
 
     <TextView
         android:id="@+id/textView_github"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="125dp"
         android:text="@string/github"
         android:textAlignment="center"
-        android:textStyle="bold"
-        android:layout_below="@+id/imageView_logo"
-        android:layout_alignParentStart="true"
-        android:layout_marginTop="12dp" />
+        android:layout_below="@+id/textView_app_version"
+        android:layout_alignParentStart="true" />
+
+    <TextView
+        android:id="@+id/textView_copyright"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/textView_github"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="35dp"
+        android:text="@string/copyright"
+        android:textAlignment="center" />
+
+    <Button
+        android:id="@+id/button_bbs"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/textView_app_version"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="41dp"
+        android:text="@string/visit_bbs" />
 </RelativeLayout>

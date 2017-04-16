@@ -4,7 +4,7 @@
     <string name="choose_game">选择游戏</string>
     <string name="tip">确保已经添加SD卡访问权限</string>
     <string name="warn">请提供SD卡访问权限！</string>
-    <string name="github">Github</string>
+    <string name="github">Github 项目页面</string>
     <string name="no_network">无网络访问!</string>
     <string name="buy">购买</string>
     <string name="get">获取</string>
@@ -12,4 +12,6 @@
     <string name="update">更新</string>
     <string name="delete">删除</string>
     <string name="run">运行</string>
+    <string name="copyright">Copyright &#169; 2017\nmoooc.cc</string>
+    <string name="visit_bbs">访问论坛</string>
 </resources>

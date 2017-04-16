@@ -7,11 +7,15 @@
     <string name="github">Github 项目页面</string>
     <string name="no_network">无网络访问!</string>
     <string name="buy">购买</string>
-    <string name="get">获取</string>
+    <string name="unlock">解锁</string>
     <string name="download">下载</string>
     <string name="update">更新</string>
     <string name="delete">删除</string>
     <string name="run">运行</string>
     <string name="copyright">Copyright &#169; 2017\nmoooc.cc</string>
     <string name="visit_bbs">访问论坛</string>
+    <string name="input_key">请输入密钥</string>
+    <string name="wrong_key">错误的密钥！</string>
+    <string name="unlock_success">解锁成功！</string>
+    <string name="download_alert">将下载 %1$.2fMiB, 继续？</string>
 </resources>

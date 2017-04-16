@@ -1,7 +1,10 @@
 package cc.moooc.actinidia;
 
+import android.app.AlertDialog;
 import android.app.ListFragment;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Outline;
@@ -17,6 +20,7 @@ import android.view.ViewOutlineProvider;
 import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RatingBar;
@@ -27,7 +31,11 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -47,12 +55,15 @@ public class GameListFragment extends ListFragment {
     private List<Integer> assets = new ArrayList<>();
     private GameArrayAdapter adapter;
 
-    private static String ASSET_FILE = "asset.txt";
-    private static String CACHE_FILE = "cache.txt";
-    private static String BANNER_IMG = "/banner.jpg";
-    private static String GAME_LIST_URL = "http://moooc.cc/games.php";
-    private static String GAME_PATH_URL = "http://moooc.cc/games/";
-    private static String GAME_ZIP = "/game.zip";
+    private static final String ASSET_FILE = "asset.txt";
+    private static final String CACHE_FILE = "cache.txt";
+    private static final String BANNER_IMG = "/banner.jpg";
+    private static final String GAME_LIST_URL = "http://moooc.cc/games.php";
+    private static final String GAME_PATH_URL = "http://moooc.cc/games/";
+    private static final String GAME_ZIP = "/game.zip";
+    private static final String LOG_FILE = "/log.ini";
+
+    private static final String FREE_GAME = "no";
 
     private class GameArrayAdapter extends BaseAdapter {
         private List<Game> games;
@@ -97,7 +108,7 @@ public class GameListFragment extends ListFragment {
             InputStream in = null;
             try {
                 // load image cache
-                in = getActivity().openFileInput(game.getId() + ".png");
+                in = new FileInputStream(new File(getActivity().getCacheDir(), game.getId() + ".png"));
                 iv.setImageBitmap(BitmapFactory.decodeStream(in));
             } catch (FileNotFoundException e) {
                 // download image
@@ -128,36 +139,129 @@ public class GameListFragment extends ListFragment {
             TextView tv_date = (TextView)convertView.findViewById(R.id.textView_date);
             tv_date.setText(game.getDate());
 
-            Button button_get_buy = (Button)convertView.findViewById(R.id.button_get_buy);
-            button_get_buy.setText(getString(game.getKey().equals("no")?R.string.get:R.string.buy));
-            button_get_buy.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
+            TextView tv_author = (TextView)convertView.findViewById(R.id.textView_author);
+            tv_author.setText(game.getAuthor());
 
+            Button btn_get_buy = (Button) convertView.findViewById(R.id.button_get_buy);
+            // Do NOT possess current game
+            if (!assets.contains(game.getId())) {
+                btn_get_buy.setText(getString(game.getKey().equals(FREE_GAME) ? R.string.unlock : R.string.buy));
+                btn_get_buy.setTag(R.id.TAG_CURRENT_GAME, game);
+                btn_get_buy.setOnClickListener(new View.OnClickListener() {
+                    EditText editText = new EditText(getActivity());
+                    Button btn;
+                    @Override
+                    public void onClick(View v) {
+                        Game game = (Game) v.getTag(R.id.TAG_CURRENT_GAME);
+                        btn = (Button)v;
+                        if (game.getKey().equals(FREE_GAME)) {
+                            // free game, unlock directly.
+                            assets.add(game.getId());
+                            unlock_game();
+                        } else {
+                            // Require the key
+                            new AlertDialog.Builder(getActivity())
+                                    .setTitle(getText(R.string.input_key))
+                                    .setView(editText)
+                                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            Game game = (Game)btn.getTag(R.id.TAG_CURRENT_GAME);
+                                            if (editText.getText().toString().equals(game.getKey())) {
+                                                assets.add(game.getId());
+                                                unlock_game();
+                                            } else {
+                                                Toast.makeText(getActivity(), getText(R.string.wrong_key),
+                                                        Toast.LENGTH_SHORT).show();
+                                            }
+                                        }
+                                    }).setNegativeButton(android.R.string.cancel,null)
+                                    .show();
+                        }
+                    }
+
+                    // click the button to download
+                    void unlock_game() {
+                        btn.setText(getText(R.string.download));
+                        btn.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                download_and_install((Game) v.getTag(R.id.TAG_CURRENT_GAME));
+                            }
+                        });
+                        Toast.makeText(getActivity(), getText(R.string.unlock_success), Toast.LENGTH_SHORT).show();
+                    }
+                });
+            } else {
+                File game_dir = new File(getActivity().getFilesDir(), game.getId()+"");
+                if (game_dir.exists()) {
+                    // Downloaded
+                    btn_get_buy.setVisibility(View.GONE);
+
+                    // Check update
+                    File log_file = new File(getActivity().getFilesDir(), game.getId()+LOG_FILE);
+                    FileReader reader = null;
+                    try {
+                        reader = new FileReader(log_file);
+                        String[] install_date = new BufferedReader(reader).readLine().split(".");
+                        if (compareDate(game.getDate().split("."), install_date)>0) {
+                            // out of date
+                            Button btn_update = (Button) convertView.findViewById(R.id.button_update);
+                            btn_update.setVisibility(View.VISIBLE);
+                            btn_update.setTag(R.id.TAG_CURRENT_GAME, game);
+                            btn_update.setOnClickListener(new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                    Game game = (Game) v.getTag(R.id.TAG_CURRENT_GAME);
+                                    // Update
+                                    // TODO: 2017/4/16  
+                                }
+                            });
+                        }
+                    } catch (IOException e){
+
+                    } finally {
+                        if (reader!=null){
+                            try{reader.close();}
+                            catch (IOException e){}
+                        }
+                    }
+
+                    Button btn_delete = (Button) convertView.findViewById(R.id.button_delete);
+                    btn_delete.setVisibility(View.VISIBLE);
+                    btn_delete.setTag(R.id.TAG_CURRENT_GAME, game);
+                    btn_delete.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            Game game = (Game) v.getTag(R.id.TAG_CURRENT_GAME);
+                            // Delete the game
+                            // TODO: 2017/4/16  
+                        }
+                    });
+                    Button btn_run = (Button) convertView.findViewById(R.id.button_run);
+                    btn_run.setVisibility(View.VISIBLE);
+                    btn_run.setTag(R.id.TAG_CURRENT_GAME, game);
+                    btn_run.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            Game game = (Game) v.getTag(R.id.TAG_CURRENT_GAME);
+                            // start the game
+                            MainActivity ma = (MainActivity)getActivity();
+                            ma.launchGame(new File(ma.getFilesDir(),game.getId()+""));
+                        }
+                    });
+                } else {
+                    // Possessed, but haven't downloaded
+                    btn_get_buy.setTag(R.id.TAG_CURRENT_GAME, game);
+                    btn_get_buy.setText(getText(R.string.download));
+                    btn_get_buy.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            download_and_install((Game) v.getTag(R.id.TAG_CURRENT_GAME));
+                        }
+                    });
                 }
-            });
-            Button button_update = (Button)convertView.findViewById(R.id.button_update);
-            button_update.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-
-                }
-            });
-            Button button_delete = (Button)convertView.findViewById(R.id.button_delete);
-            button_delete.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-
-                }
-            });
-            Button button_run = (Button)convertView.findViewById(R.id.button_run);
-            button_run.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-
-                }
-            });
-
+            }
             return convertView;
         }
     }
@@ -255,7 +359,7 @@ public class GameListFragment extends ListFragment {
                 // image cache
                 OutputStream out = null;
                 try {
-                    out = getActivity().openFileOutput(id + ".png", Context.MODE_PRIVATE);
+                    out = new FileOutputStream(new File(getActivity().getCacheDir(), id + ".png"));
                     bmp.compress(Bitmap.CompressFormat.PNG, 100, out);
                 } catch (IOException e){
                     e.printStackTrace();
@@ -271,8 +375,25 @@ public class GameListFragment extends ListFragment {
         }
     }
 
+    // if d1 > d2 return 1, d1 < d2 return -1, equal return 0
+    private static int compareDate(String[] d1, String[] d2){
+        int year1 = Integer.parseInt(d1[0]);
+        int month1 = Integer.parseInt(d1[1]);
+        int day1 = Integer.parseInt(d1[2]);
+        int year2 = Integer.parseInt(d2[0]);
+        int month2 = Integer.parseInt(d2[1]);
+        int day2 = Integer.parseInt(d2[2]);
+        if (year1>year2) return 1;
+        else if (year1<year2) return -1;
+        else if (month1>month2) return 1;
+        else if (month1<month2) return -1;
+        else if (day1>day2) return 1;
+        else if (day1<day2) return -1;
+        else return 0;
+    }
+
     /**
-     * Parse http respond to List. Remove all '\r' automatically.
+     * <p>Parse http respond to List. Remove all '\r' automatically.</p>
      * @param game_list_str string to parse
      * @param games List
      */
@@ -311,6 +432,34 @@ public class GameListFragment extends ListFragment {
             ++id;
         }
         Collections.reverse(games);
+    }
+
+    /**
+     * <p>Download remote game and unpack install.</p>
+     * <p>Then restart the activity after the game was installed.</p>
+     * @param game the game to download
+     */
+    void download_and_install(Game game) {
+        // Attention
+        new AlertDialog.Builder(getActivity()).setTitle(android.R.string.dialog_alert_title)
+                .setMessage(getString(R.string.download_alert,game.getSize()/(1024*1024f)))
+                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        // Download game
+                        // TODO: 2017/4/16
+
+                        // Install (unzip)
+                        // TODO: 2017/4/16
+
+                        // Create LOG_FILE, write install-time
+                        // TODO: 2017/4/16
+
+                        // Restart the activity
+                        getActivity().recreate();
+                    }
+                }).setNegativeButton(android.R.string.cancel, null)
+                .show();
     }
 
     @Override
@@ -377,13 +526,14 @@ public class GameListFragment extends ListFragment {
     }
 
     @Override
-    public void onPause() {
+    public void onDestroy() {
         // Save assets
         OutputStream out = null;
         try {
-            out = getActivity().openFileOutput(CACHE_FILE, Context.MODE_PRIVATE);
+            out = getActivity().openFileOutput(ASSET_FILE, Context.MODE_PRIVATE);
             for (Integer i : assets) {
                 out.write(i.toString().getBytes());
+                out.write('\n');
             }
         } catch (IOException e){
             e.printStackTrace();
@@ -394,7 +544,7 @@ public class GameListFragment extends ListFragment {
                 {e.printStackTrace();}
             }
         }
-        super.onPause();
+        super.onDestroy();
     }
 }
 

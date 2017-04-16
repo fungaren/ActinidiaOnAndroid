@@ -1,5 +1,6 @@
 
 <resources>
+    <item type="id" name="TAG_CURRENT_GAME" />
     <string name="app_name">Actinidia</string>
     <string name="choose_game">Select a game</string>
     <string name="tip">Make sure your have provided \nsdCard access permission.</string>
@@ -7,11 +8,15 @@
     <string name="github">Project page on Github</string>
     <string name="no_network">No network!</string>
     <string name="buy">Buy</string>
-    <string name="get">Get</string>
+    <string name="unlock">Unlock</string>
     <string name="download">Download</string>
     <string name="update">Update</string>
     <string name="delete">Delete</string>
     <string name="run">Run</string>
     <string name="copyright">Copyright &#169; 2017\nmoooc.cc</string>
     <string name="visit_bbs">Visit forum</string>
+    <string name="input_key">Please input the key</string>
+    <string name="wrong_key">Wrong key!</string>
+    <string name="unlock_success">Unlock successfully!</string>
+    <string name="download_alert">Will download %1$.2fMiB, continue?</string>
 </resources>

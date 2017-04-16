@@ -94,7 +94,7 @@ public class MainActivity extends AppCompatActivity {
      * Play in GameActivity
      * @param gameDir eg. ActinidiaGames/res-rpg
      */
-    private void launchGame(File gameDir){
+    public void launchGame(File gameDir){
         boolean vertical;
         try {
             Reader config = new FileReader(new File(gameDir,"config.ini"));

@@ -26,7 +26,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:adjustViewBounds="true"
-        android:paddingBottom="8dp"
         android:paddingTop="8dp"
         app:srcCompat="?android:attr/colorBackground" />
 
@@ -34,8 +33,7 @@
         android:id="@+id/textView_description"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingLeft="8dp"
-        android:paddingRight="8dp"
+        android:padding="8dp"
         android:text="TextView"
         android:textColor="?attr/editTextColor" />
 
@@ -46,32 +44,42 @@
         android:paddingLeft="8dp"
         android:paddingRight="9dp">
 
-        <TextView
-            android:id="@+id/textView_game_version"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_weight="100"
-            android:text="TextView" />
-
-        <TextView
-            android:id="@+id/textView_date"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_weight="100"
-            android:text="TextView" />
-
         <RatingBar
             android:id="@+id/ratingBar_star"
             style="@android:style/Widget.DeviceDefault.RatingBar.Small"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:layout_weight="1"
+            android:layout_weight="0"
             android:numStars="5"
             android:rating="1"
             android:stepSize="1" />
+
+        <TextView
+            android:id="@+id/textView_author"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="TextView"
+            android:textAlignment="center" />
+
+        <TextView
+            android:id="@+id/textView_date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_weight="1"
+            android:text="TextView"
+            android:textAlignment="center" />
+
+        <TextView
+            android:id="@+id/textView_game_version"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_weight="1"
+            android:text="TextView"
+            android:textAlignment="center" />
 
     </LinearLayout>
 
@@ -79,35 +87,39 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_weight="1"
+        android:gravity="right"
         android:orientation="horizontal">
 
         <Button
             android:id="@+id/button_get_buy"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
+            android:layout_weight="0"
             android:text="Button" />
 
         <Button
             android:id="@+id/button_update"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/update" />
+            android:layout_weight="0"
+            android:text="@string/update"
+            android:visibility="gone" />
 
         <Button
             android:id="@+id/button_delete"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/delete" />
+            android:layout_weight="0"
+            android:text="@string/delete"
+            android:visibility="gone" />
 
         <Button
             android:id="@+id/button_run"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/run" />
+            android:layout_weight="0"
+            android:text="@string/run"
+            android:visibility="gone" />
     </LinearLayout>
 
 </LinearLayout>

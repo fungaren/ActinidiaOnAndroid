@@ -207,8 +207,8 @@ public class GameListFragment extends ListFragment {
                     FileReader reader = null;
                     try {
                         reader = new FileReader(getLogFile(game.getId()));
-                        String[] install_date = new BufferedReader(reader).readLine().split(".");
-                        if (compareDate(game.getDate().split("."), install_date)>0) {
+                        String[] install_date = new BufferedReader(reader).readLine().split("\\.");
+                        if (compareDate(game.getDate().split("\\."), install_date)>0) {
                             // out of date
                             Button btn_update = (Button) convertView.findViewById(R.id.button_update);
                             btn_update.setVisibility(View.VISIBLE);
@@ -228,11 +228,21 @@ public class GameListFragment extends ListFragment {
                     btn_delete.setVisibility(View.VISIBLE);
                     btn_delete.setTag(R.id.TAG_CURRENT_GAME, game);
                     btn_delete.setOnClickListener(new View.OnClickListener() {
+                        Game game;
                         @Override
                         public void onClick(View v) {
-                            Game game = (Game) v.getTag(R.id.TAG_CURRENT_GAME);
-                            // Delete the game
-                            FileUtil.deleteDir(getGameDir(game.getId()));
+                            game = (Game) v.getTag(R.id.TAG_CURRENT_GAME);
+                            // Confirm to delete
+                            new AlertDialog.Builder(getActivity()).setTitle(android.R.string.dialog_alert_title)
+                                    .setMessage(getString(R.string.confirm_delete))
+                                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            FileUtil.deleteDir(getGameDir(game.getId()));
+                                            Toast.makeText(getActivity(), R.string.delete_success, Toast.LENGTH_SHORT).show();
+                                        }
+                                    }).setNegativeButton(android.R.string.cancel, null)
+                                    .show();
                         }
                     });
                     Button btn_run = (Button) convertView.findViewById(R.id.button_run);
@@ -268,9 +278,9 @@ public class GameListFragment extends ListFragment {
         @Override
         public void onClick(View v) {
             game = (Game) v.getTag(R.id.TAG_CURRENT_GAME);
-            // Attention
+            // Confirm to download
             new AlertDialog.Builder(getActivity()).setTitle(android.R.string.dialog_alert_title)
-                    .setMessage(getString(R.string.download_alert,game.getSize()/(1024*1024f)))
+                    .setMessage(getString(R.string.confirm_download,game.getSize()/(1024*1024f)))
                     .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
@@ -442,7 +452,7 @@ public class GameListFragment extends ListFragment {
             FileWriter writer = null;
             try {
                 writer = new FileWriter(getLogFile(game_id));
-                writer.write(new SimpleDateFormat("yyyy.mm.dd", Locale.getDefault()).format(new Date()).toCharArray());
+                writer.write(new SimpleDateFormat("yyyy.MM.dd", Locale.getDefault()).format(new Date()).toCharArray());
             } catch (IOException e){
 
             } finally {

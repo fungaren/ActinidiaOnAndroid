@@ -18,7 +18,9 @@
     <string name="input_key">Please input the key</string>
     <string name="wrong_key">Wrong key!</string>
     <string name="unlock_success">Unlock successfully!</string>
-    <string name="download_alert">Will download %1$.2fMiB, continue?</string>
+    <string name="confirm_download">Will download %1$.2fMiB, continue?</string>
     <string name="wait_download">Downloading&#8230;</string>
     <string name="install_success">Installed successfully!</string>
+    <string name="confirm_delete">Confirm to delete?</string>
+    <string name="delete_success">Delete successfully!</string>
 </resources>

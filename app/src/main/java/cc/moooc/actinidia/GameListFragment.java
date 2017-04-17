@@ -4,20 +4,16 @@ import android.app.AlertDialog;
 import android.app.ListFragment;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Outline;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.annotation.IntegerRes;
 import android.support.annotation.Nullable;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
-import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -27,25 +23,23 @@ import android.widget.RatingBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Game list fragment
@@ -61,9 +55,24 @@ public class GameListFragment extends ListFragment {
     private static final String GAME_LIST_URL = "http://moooc.cc/games.php";
     private static final String GAME_PATH_URL = "http://moooc.cc/games/";
     private static final String GAME_ZIP = "/game.zip";
-    private static final String LOG_FILE = "/log.ini";
 
     private static final String FREE_GAME = "no";
+
+    private File getCacheImage(int game_id){
+        return new File(getActivity().getCacheDir(), game_id + ".png");
+    }
+
+    private File getGameDir(int game_id){
+        return new File(getActivity().getFilesDir(), game_id + "");
+    }
+
+    private File getLogFile(int game_id){
+        return new File(getActivity().getFilesDir(), game_id + "/log.ini");
+    }
+
+    private File getZipFile(int game_id){
+        return new File(getActivity().getCacheDir(), game_id +".zip");
+    }
 
     private class GameArrayAdapter extends BaseAdapter {
         private List<Game> games;
@@ -108,7 +117,7 @@ public class GameListFragment extends ListFragment {
             InputStream in = null;
             try {
                 // load image cache
-                in = new FileInputStream(new File(getActivity().getCacheDir(), game.getId() + ".png"));
+                in = new FileInputStream(getCacheImage(game.getId()));
                 iv.setImageBitmap(BitmapFactory.decodeStream(in));
             } catch (FileNotFoundException e) {
                 // download image
@@ -183,40 +192,28 @@ public class GameListFragment extends ListFragment {
                     // click the button to download
                     void unlock_game() {
                         btn.setText(getText(R.string.download));
-                        btn.setOnClickListener(new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                download_and_install((Game) v.getTag(R.id.TAG_CURRENT_GAME));
-                            }
-                        });
+                        btn.setOnClickListener(new DownloadListener());
                         Toast.makeText(getActivity(), getText(R.string.unlock_success), Toast.LENGTH_SHORT).show();
                     }
                 });
             } else {
-                File game_dir = new File(getActivity().getFilesDir(), game.getId()+"");
+                // Possessed game
+                File game_dir = getGameDir(game.getId());
                 if (game_dir.exists()) {
-                    // Downloaded
+                    // Installed
                     btn_get_buy.setVisibility(View.GONE);
 
                     // Check update
-                    File log_file = new File(getActivity().getFilesDir(), game.getId()+LOG_FILE);
                     FileReader reader = null;
                     try {
-                        reader = new FileReader(log_file);
+                        reader = new FileReader(getLogFile(game.getId()));
                         String[] install_date = new BufferedReader(reader).readLine().split(".");
                         if (compareDate(game.getDate().split("."), install_date)>0) {
                             // out of date
                             Button btn_update = (Button) convertView.findViewById(R.id.button_update);
                             btn_update.setVisibility(View.VISIBLE);
                             btn_update.setTag(R.id.TAG_CURRENT_GAME, game);
-                            btn_update.setOnClickListener(new View.OnClickListener() {
-                                @Override
-                                public void onClick(View v) {
-                                    Game game = (Game) v.getTag(R.id.TAG_CURRENT_GAME);
-                                    // Update
-                                    // TODO: 2017/4/16  
-                                }
-                            });
+                            btn_update.setOnClickListener(new DownloadListener());
                         }
                     } catch (IOException e){
 
@@ -235,7 +232,7 @@ public class GameListFragment extends ListFragment {
                         public void onClick(View v) {
                             Game game = (Game) v.getTag(R.id.TAG_CURRENT_GAME);
                             // Delete the game
-                            // TODO: 2017/4/16  
+                            FileUtil.deleteDir(getGameDir(game.getId()));
                         }
                     });
                     Button btn_run = (Button) convertView.findViewById(R.id.button_run);
@@ -245,24 +242,43 @@ public class GameListFragment extends ListFragment {
                         @Override
                         public void onClick(View v) {
                             Game game = (Game) v.getTag(R.id.TAG_CURRENT_GAME);
-                            // start the game
+                            // launch the game
                             MainActivity ma = (MainActivity)getActivity();
-                            ma.launchGame(new File(ma.getFilesDir(),game.getId()+""));
+                            ma.launchGame(getGameDir(game.getId()));
                         }
                     });
                 } else {
-                    // Possessed, but haven't downloaded
+                    // Possessed, but haven't installed
                     btn_get_buy.setTag(R.id.TAG_CURRENT_GAME, game);
                     btn_get_buy.setText(getText(R.string.download));
-                    btn_get_buy.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            download_and_install((Game) v.getTag(R.id.TAG_CURRENT_GAME));
-                        }
-                    });
+                    btn_get_buy.setOnClickListener(new DownloadListener());
                 }
             }
             return convertView;
+        }
+    }
+
+    // Confirm to download
+    private class DownloadListener implements View.OnClickListener {
+        Game game;
+        /**
+         * <p>Download the game, unpack and install.</p>
+         * <p>Then restart the activity after the game was installed.</p>
+         */
+        @Override
+        public void onClick(View v) {
+            game = (Game) v.getTag(R.id.TAG_CURRENT_GAME);
+            // Attention
+            new AlertDialog.Builder(getActivity()).setTitle(android.R.string.dialog_alert_title)
+                    .setMessage(getString(R.string.download_alert,game.getSize()/(1024*1024f)))
+                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            GameAsyncInstall async = new GameAsyncInstall(game.getId());
+                            async.execute();
+                        }
+                    }).setNegativeButton(android.R.string.cancel, null)
+                    .show();
         }
     }
 
@@ -359,7 +375,7 @@ public class GameListFragment extends ListFragment {
                 // image cache
                 OutputStream out = null;
                 try {
-                    out = new FileOutputStream(new File(getActivity().getCacheDir(), id + ".png"));
+                    out = new FileOutputStream(getCacheImage(id));
                     bmp.compress(Bitmap.CompressFormat.PNG, 100, out);
                 } catch (IOException e){
                     e.printStackTrace();
@@ -369,6 +385,70 @@ public class GameListFragment extends ListFragment {
                         catch (IOException e)
                         {e.printStackTrace();}
                     }
+                }
+            }
+            return null;
+        }
+    }
+
+    // Download and install game
+    private class GameAsyncInstall extends AsyncTask<Void,Void,Void> {
+        private int game_id;
+        private AlertDialog dlg;
+        public GameAsyncInstall(int game_id) {
+            super();
+            this.game_id = game_id;
+        }
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            dlg = new AlertDialog.Builder(getActivity()).setMessage(R.string.wait_download).create();
+            dlg.show();
+        }
+
+        @Override
+        protected void onPostExecute(Void v) {
+            super.onPostExecute(v);
+            if (dlg.isShowing())
+                dlg.dismiss();
+            Toast.makeText(getActivity(),R.string.install_success, Toast.LENGTH_SHORT).show();
+            // Restart the activity
+            getActivity().recreate();
+        }
+
+        @Override
+        protected void onProgressUpdate(Void... values) {
+            super.onProgressUpdate(values);
+        }
+
+        @Override
+        protected Void doInBackground(Void... v) {
+            // Download game
+            File zipFile = getZipFile(game_id);
+            HttpUtil.downloadFile(GAME_PATH_URL + game_id + GAME_ZIP, zipFile);
+
+            // Check if has installed
+            File game_dir = getGameDir(game_id);
+            if (game_dir.exists()){
+                // remove the old and replace
+                FileUtil.deleteDir(game_dir);
+            }
+
+            // Install (unzip)
+            FileUtil.unzip(game_dir, zipFile);
+
+            // Create LOG_FILE, write install-time
+            FileWriter writer = null;
+            try {
+                writer = new FileWriter(getLogFile(game_id));
+                writer.write(new SimpleDateFormat("yyyy.mm.dd", Locale.getDefault()).format(new Date()).toCharArray());
+            } catch (IOException e){
+
+            } finally {
+                if (writer!=null){
+                    try{writer.close();}
+                    catch (IOException e){}
                 }
             }
             return null;
@@ -432,34 +512,6 @@ public class GameListFragment extends ListFragment {
             ++id;
         }
         Collections.reverse(games);
-    }
-
-    /**
-     * <p>Download remote game and unpack install.</p>
-     * <p>Then restart the activity after the game was installed.</p>
-     * @param game the game to download
-     */
-    void download_and_install(Game game) {
-        // Attention
-        new AlertDialog.Builder(getActivity()).setTitle(android.R.string.dialog_alert_title)
-                .setMessage(getString(R.string.download_alert,game.getSize()/(1024*1024f)))
-                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        // Download game
-                        // TODO: 2017/4/16
-
-                        // Install (unzip)
-                        // TODO: 2017/4/16
-
-                        // Create LOG_FILE, write install-time
-                        // TODO: 2017/4/16
-
-                        // Restart the activity
-                        getActivity().recreate();
-                    }
-                }).setNegativeButton(android.R.string.cancel, null)
-                .show();
     }
 
     @Override
@@ -545,68 +597,5 @@ public class GameListFragment extends ListFragment {
             }
         }
         super.onDestroy();
-    }
-}
-
-class HttpUtil {
-    /**
-     * Read a string from Internet
-     * @param url a URL string
-     * @param charset eg. "utf-8"
-     * @return a string read from specific url, empty string if failed
-     */
-    public static String getHttpContent(String url, String charset) {
-        HttpURLConnection connection = null;
-        try {
-            connection = (HttpURLConnection)new URL(url).openConnection();
-            connection.setRequestMethod("GET");
-            connection.setConnectTimeout(3000);
-            connection.setReadTimeout(3000);
-            connection.getResponseCode();
-            InputStream in = connection.getInputStream();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(in, charset));
-            StringBuilder sb = new StringBuilder();
-            char[] bytes = new char[1024];
-            int size;
-            while ((size=reader.read(bytes))>0) {
-                sb.append(bytes,0,size);
-            }
-            return sb.toString();
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if(connection !=null) {
-                connection.disconnect();
-            }
-        }
-        return "";
-    }
-
-    /**
-     * Load an image from Internet.
-     * @param url A URL string
-     * @return A bitmap load from Internet, null if failed
-     */
-    public static Bitmap getHttpImage(String url) {
-        HttpURLConnection connection = null;
-        try {
-            connection = (HttpURLConnection)new URL(url).openConnection();
-            connection.setRequestMethod("GET");
-            connection.setConnectTimeout(3000);
-            connection.setReadTimeout(3000);
-            connection.getResponseCode();
-            InputStream in = connection.getInputStream();
-            Bitmap bmp = BitmapFactory.decodeStream(in);
-            return bmp;
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if(connection != null){
-                connection.disconnect();
-            }
-        }
-        return null;
     }
 }

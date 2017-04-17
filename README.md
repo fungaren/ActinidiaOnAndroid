@@ -10,7 +10,7 @@
 
 ![flappy_bird](http://7nas1f.com1.z0.glb.clouddn.com/actinidia_flappy.jpg)
 
-<img src="http://7nas1f.com1.z0.glb.clouddn.com/actinidia_on_android_app_1_0_2.png" alt="app" width="340" height="604">
+<img src="http://7nas1f.com1.z0.glb.clouddn.com/actinidia_on_android_app_1_0_5.jpg" alt="app" width="405" height="720">
 
 ## Build your game
 

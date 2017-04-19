@@ -10,6 +10,7 @@ import android.graphics.Outline;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -152,12 +153,20 @@ public class GameListFragment extends ListFragment {
             tv_author.setText(game.getAuthor());
 
             Button btn_get_buy = (Button) convertView.findViewById(R.id.button_get_buy);
+            btn_get_buy.setVisibility(View.VISIBLE);
+            Button btn_update = (Button) convertView.findViewById(R.id.button_update);
+            btn_update.setVisibility(View.GONE);
+            Button btn_delete = (Button) convertView.findViewById(R.id.button_delete);
+            btn_delete.setVisibility(View.GONE);
+            Button btn_run = (Button) convertView.findViewById(R.id.button_run);
+            btn_run.setVisibility(View.GONE);
+
             // Do NOT possess current game
             if (!assets.contains(game.getId())) {
                 btn_get_buy.setText(getString(game.getKey().equals(FREE_GAME) ? R.string.unlock : R.string.buy));
                 btn_get_buy.setTag(R.id.TAG_CURRENT_GAME, game);
                 btn_get_buy.setOnClickListener(new View.OnClickListener() {
-                    EditText editText = new EditText(getActivity());
+                    EditText editText;
                     Button btn;
                     @Override
                     public void onClick(View v) {
@@ -169,6 +178,7 @@ public class GameListFragment extends ListFragment {
                             unlock_game();
                         } else {
                             // Require the key
+                            editText = new EditText(getActivity());
                             new AlertDialog.Builder(getActivity())
                                     .setTitle(getText(R.string.input_key))
                                     .setView(editText)
@@ -183,6 +193,7 @@ public class GameListFragment extends ListFragment {
                                                 Toast.makeText(getActivity(), getText(R.string.wrong_key),
                                                         Toast.LENGTH_SHORT).show();
                                             }
+
                                         }
                                     }).setNegativeButton(android.R.string.cancel,null)
                                     .show();
@@ -210,7 +221,6 @@ public class GameListFragment extends ListFragment {
                         String[] install_date = new BufferedReader(reader).readLine().split("\\.");
                         if (compareDate(game.getDate().split("\\."), install_date)>0) {
                             // out of date
-                            Button btn_update = (Button) convertView.findViewById(R.id.button_update);
                             btn_update.setVisibility(View.VISIBLE);
                             btn_update.setTag(R.id.TAG_CURRENT_GAME, game);
                             btn_update.setOnClickListener(new DownloadListener());
@@ -224,7 +234,6 @@ public class GameListFragment extends ListFragment {
                         }
                     }
 
-                    Button btn_delete = (Button) convertView.findViewById(R.id.button_delete);
                     btn_delete.setVisibility(View.VISIBLE);
                     btn_delete.setTag(R.id.TAG_CURRENT_GAME, game);
                     btn_delete.setOnClickListener(new View.OnClickListener() {
@@ -240,19 +249,20 @@ public class GameListFragment extends ListFragment {
                                         public void onClick(DialogInterface dialog, int which) {
                                             FileUtil.deleteDir(getGameDir(game.getId()));
                                             Toast.makeText(getActivity(), R.string.delete_success, Toast.LENGTH_SHORT).show();
+                                            // Restart the activity
+                                            getActivity().recreate();
                                         }
                                     }).setNegativeButton(android.R.string.cancel, null)
                                     .show();
                         }
                     });
-                    Button btn_run = (Button) convertView.findViewById(R.id.button_run);
                     btn_run.setVisibility(View.VISIBLE);
                     btn_run.setTag(R.id.TAG_CURRENT_GAME, game);
                     btn_run.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
                             Game game = (Game) v.getTag(R.id.TAG_CURRENT_GAME);
-                            // launch the game
+                            // Launch the game
                             MainActivity ma = (MainActivity)getActivity();
                             ma.launchGame(getGameDir(game.getId()));
                         }

@@ -48,10 +48,10 @@ public class GameActivity extends Activity {
     private File gameDir;
     private boolean vertical = false; // in "res/config.ini"
 
-    private Timer timer;     // produce refresh message
+    private Timer timer;     // Refresh the surface view. Any tasks will be processed here.
+    private TimerTask paint_loop;
     private SoundPool sp;
     private Map<Integer,Boolean> sound_list;
-    private Handler hRefresh = new Handler();   // for redraw
 
     private File data_file;        // user data ("res/data")
     private Properties prop;        // load settings at beginning, save setting on destroy
@@ -123,29 +123,67 @@ public class GameActivity extends Activity {
         // set message handler
         sfv.setOnTouchListener(new View.OnTouchListener() {
             float oldX = 0, oldY = 0;
+            float p1, p2;
+
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
                 // int i = motionEvent.getActionIndex();
                 switch (motionEvent.getActionMasked()) {
+                    // Note that we MUST NOT invoke callbacks directly.
+                    // As we shouldn't do that on main thread.
                     case MotionEvent.ACTION_DOWN:   // A primary pointer has gone down.
-                        OnLButtonDown(motionEvent.getX(0),motionEvent.getY(0));
+                        p1 = motionEvent.getX(0);
+                        p2 = motionEvent.getY(0);
+                        timer.schedule(new TimerTask() {
+                            @Override
+                            public void run() {
+                                OnLButtonDown(p1,p2);
+                            }
+                        }, 0);
                         break;
                     case MotionEvent.ACTION_UP:     // A primary pointer has gone up.
-                        OnLButtonUp(motionEvent.getX(0),motionEvent.getY(0));
+                        p1 = motionEvent.getX(0);
+                        p2 = motionEvent.getY(0);
+                        timer.schedule(new TimerTask() {
+                            @Override
+                            public void run() {
+                                OnLButtonUp(p1,p2);
+                            }
+                        }, 0);
                         break;
                     case MotionEvent.ACTION_POINTER_DOWN:   // A non-primary pointer has gone down.
-                        OnLButtonDown(motionEvent.getX(1),motionEvent.getY(1));
+                        p1 = motionEvent.getX(1);
+                        p2 = motionEvent.getY(1);
+                        timer.schedule(new TimerTask() {
+                            @Override
+                            public void run() {
+                                OnLButtonDown(p1,p2);
+                            }
+                        }, 0);
                         break;
                     case MotionEvent.ACTION_POINTER_UP:     // A non-primary pointer has gone up.
-                        OnLButtonUp(motionEvent.getX(1),motionEvent.getY(1));
+                        p1 = motionEvent.getX(1);
+                        p2 = motionEvent.getY(1);
+                        timer.schedule(new TimerTask() {
+                            @Override
+                            public void run() {
+                                OnLButtonUp(p1,p2);
+                            }
+                        }, 0);
                         break;
                     case MotionEvent.ACTION_MOVE:
                     {
                         float newX = motionEvent.getX(0);
                         float newY = motionEvent.getY(0);
-                        // suppress
+                        p1 = newX; p2 = newY;
+                        // Suppress slight shiver
                         if (Math.abs(newX-oldX)>4 || Math.abs(newY-oldY)>4)
-                            OnMouseMove(newX,newY);
+                            timer.schedule(new TimerTask() {
+                                @Override
+                                public void run() {
+                                    OnMouseMove(p1,p2);
+                                }
+                            }, 0);
                         oldX = newX;
                         oldY = newY;
                         break;
@@ -160,19 +198,17 @@ public class GameActivity extends Activity {
     private void setTimer()
     {
         timer = new Timer();
-        timer.schedule(new TimerTask() {
+        paint_loop = new TimerTask() {
             @Override
             public void run() {
-                hRefresh.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        Canvas c = sfh.lockCanvas();
-                        OnPaint(c);                 // invoke OnPaint() in script
-                        sfh.unlockCanvasAndPost(c);
-                    }
-                });
+                Canvas c = sfh.lockCanvas();
+                // invoke OnPaint() in script
+                OnPaint(c);
+                sfh.unlockCanvasAndPost(c);
             }
-        }, 300, 17);       // period: 16.6667ms -> 60fps
+        };
+        // period: 16.6667ms -> 60fps
+        timer.schedule(paint_loop, 300, 17);
     }
 
     private void saveUserData()
@@ -203,10 +239,15 @@ public class GameActivity extends Activity {
     @Override
     protected void onPause() {
         if (initialized) {
+            paint_loop.cancel();
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    OnKillFocus();  // !
+                }
+            },0);
             timer.cancel();
             timer = null;
-
-            OnKillFocus();  // !
         }
         super.onPause();
     }
@@ -214,8 +255,13 @@ public class GameActivity extends Activity {
     @Override
     protected void onResume() {
         if (initialized) {
-            OnSetFocus();
             setTimer();
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    OnSetFocus();  // !
+                }
+            },0);
         }
         super.onResume();
     }

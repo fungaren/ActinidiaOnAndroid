@@ -23,4 +23,8 @@
     <string name="install_success">Installed successfully!</string>
     <string name="confirm_delete">Confirm to delete?</string>
     <string name="delete_success">Delete successfully!</string>
+    <string name="check_update">Check update</string>
+    <string name="update_found">New version (%1$s) released!</string>
+    <string name="confirm_update">Download the new version now?</string>
+    <string name="no_update">Already the latest version!</string>
 </resources>

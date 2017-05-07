@@ -86,7 +86,8 @@ class HttpUtil {
                 connection.disconnect();
             }
             try{
-                out.close();
+                if (out!=null)
+                    out.close();
             }catch (IOException e){
 
             }

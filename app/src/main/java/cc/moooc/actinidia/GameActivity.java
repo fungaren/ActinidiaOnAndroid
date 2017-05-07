@@ -4,9 +4,9 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.graphics.Typeface;
+import android.media.MediaPlayer;
 import android.media.SoundPool;
 import android.os.Bundle;
-import android.os.Handler;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
@@ -29,8 +29,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -46,15 +44,16 @@ public class GameActivity extends Activity {
     }
 
     private File gameDir;
-    private boolean vertical = false; // in "res/config.ini"
+    private boolean vertical = false;  // in "res/config.ini"
 
-    private Timer timer;     // Refresh the surface view. Any tasks will be processed here.
+    private Timer timer;               // Refresh the surface view. Any tasks will be processed here.
     private TimerTask paint_loop;
     private SoundPool sp;
-    private Map<Integer,Boolean> sound_list;
+    private final static int MEDIAPLAYER_ID = 256;
+    private MediaPlayer mp;            // for loop sound
 
-    private File data_file;        // user data ("res/data")
-    private Properties prop;        // load settings at beginning, save setting on destroy
+    private File data_file;            // user data ("res/data")
+    private Properties prop;           // load settings at beginning, save setting on destroy
 
     /**
      * Make preparations.
@@ -81,15 +80,15 @@ public class GameActivity extends Activity {
             Reader data_reader = new FileReader(data_file);
             prop.load(data_reader);
             data_reader.close();
-        }catch(IOException e){}
+        } catch(IOException e) {}
 
-        // init SoundPool
+        // init SoundPool & MediaPlayer
         sp = new SoundPool.Builder().setMaxStreams(255).build();
-        sound_list = new HashMap<>();
-        sp.setOnLoadCompleteListener(new SoundPool.OnLoadCompleteListener() {
+        mp = new MediaPlayer();
+        mp.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
             @Override
-            public void onLoadComplete(SoundPool soundPool, int i, int i1) {
-                if(sound_list.get(i)) sp.play(i,1,1,1,0,1); // if loop, auto-play
+            public void onPrepared(MediaPlayer mp) {
+                mp.start();
             }
         });
 
@@ -129,8 +128,8 @@ public class GameActivity extends Activity {
             public boolean onTouch(View view, MotionEvent motionEvent) {
                 // int i = motionEvent.getActionIndex();
                 switch (motionEvent.getActionMasked()) {
-                    // Note that we MUST NOT invoke callbacks directly.
-                    // As we shouldn't do that on main thread.
+                    // Note that we can NOT invoke callbacks directly.
+                    // As we should NOT do that on main thread.
                     case MotionEvent.ACTION_DOWN:   // A primary pointer has gone down.
                         p1 = motionEvent.getX(0);
                         p2 = motionEvent.getY(0);
@@ -228,6 +227,10 @@ public class GameActivity extends Activity {
             OnClose(); // !!!
             saveUserData();
 
+            if (mp != null) {
+                mp.stop();
+                mp.release();
+            }
             if(sp != null) {
                 sp.release();
                 sp = null;
@@ -239,6 +242,8 @@ public class GameActivity extends Activity {
     @Override
     protected void onPause() {
         if (initialized) {
+            if (mp.isPlaying())
+                mp.pause();
             paint_loop.cancel();
             timer.schedule(new TimerTask() {
                 @Override
@@ -255,6 +260,7 @@ public class GameActivity extends Activity {
     @Override
     protected void onResume() {
         if (initialized) {
+            mp.start();
             setTimer();
             timer.schedule(new TimerTask() {
                 @Override
@@ -370,22 +376,37 @@ public class GameActivity extends Activity {
                 new Paint(Paint.ANTI_ALIAS_FLAG));
     }
     public int getSound(String pathname, boolean bLoop) {
-        int sound = sp.load(gameDir.toString()+pathname.substring(3).replace('\\','/'),1);
-        sound_list.put(sound, bLoop);
-        if (bLoop)
-            sp.setLoop(sound, -1);
-        return sound;
+        String path = gameDir.toString() + pathname.substring(3).replace('\\', '/');
+        if (bLoop) {
+            try {
+                mp.setDataSource(path);
+                mp.prepareAsync();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return MEDIAPLAYER_ID;
+        } else {
+            return sp.load(path, 1);
+        }
     }
     public void stopSound(int sound) {
-        sp.stop(sound);
-        sp.unload(sound);
+        if (sound == MEDIAPLAYER_ID){
+            mp.stop();
+        } else {
+            sp.stop(sound);
+            sp.unload(sound);
+        }
     }
-    public void setVolume(int sound, float volume){
-        sp.setVolume(sound,volume,volume);
+    public void setVolume(int sound, float volume) {
+        if (sound == MEDIAPLAYER_ID) {
+            mp.setVolume(volume, volume);
+        } else {
+            sp.setVolume(sound, volume, volume);
+        }
     }
     public void playSound(int sound) {
-        if(!sound_list.get(sound))
-            sp.play(sound,1,1,1,0,1); // loop will auto-play
+        if (sound == MEDIAPLAYER_ID) return;
+        sp.play(sound,1,1,1,0,1);
     }
     public String getSetting(String key) {
         return prop.getProperty(key);   // return null if not found

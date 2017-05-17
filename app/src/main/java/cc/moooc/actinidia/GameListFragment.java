@@ -277,7 +277,7 @@ public class GameListFragment extends ListFragment {
             return convertView;
         }
     }
-
+    private boolean isDownloading = false;
     // Confirm to download
     private class DownloadListener implements View.OnClickListener {
         Game game;
@@ -287,6 +287,10 @@ public class GameListFragment extends ListFragment {
          */
         @Override
         public void onClick(View v) {
+            if (isDownloading) {
+                Toast.makeText(getActivity(),R.string.please_wait,Toast.LENGTH_SHORT).show();
+                return;
+            }
             game = (Game) v.getTag(R.id.TAG_CURRENT_GAME);
             // Confirm to download
             new AlertDialog.Builder(getActivity()).setTitle(android.R.string.dialog_alert_title)
@@ -295,6 +299,7 @@ public class GameListFragment extends ListFragment {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
                             GameAsyncInstall async = new GameAsyncInstall(game.getId());
+                            isDownloading = true;
                             async.execute();
                         }
                     }).setNegativeButton(android.R.string.cancel, null)
@@ -433,6 +438,7 @@ public class GameListFragment extends ListFragment {
             if (dlg.isShowing())
                 dlg.dismiss();
             Toast.makeText(getActivity(),R.string.install_success, Toast.LENGTH_SHORT).show();
+            isDownloading = false;
             // Restart the activity
             getActivity().recreate();
         }

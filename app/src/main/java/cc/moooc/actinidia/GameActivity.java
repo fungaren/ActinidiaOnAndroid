@@ -392,6 +392,7 @@ public class GameActivity extends Activity {
     public void stopSound(int sound) {
         if (sound == MEDIAPLAYER_ID){
             mp.stop();
+            mp.reset();
         } else {
             sp.stop(sound);
             sp.unload(sound);

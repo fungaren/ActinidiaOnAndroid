@@ -27,4 +27,5 @@
     <string name="update_found">New version (%1$s) released!</string>
     <string name="confirm_update">Download the new version now?</string>
     <string name="no_update">Already the latest version!</string>
+    <string name="please_wait">Please wait&#8230;</string>
 </resources>

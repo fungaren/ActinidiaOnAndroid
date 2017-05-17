@@ -19,7 +19,6 @@ Java_cc_moooc_actinidia_GameActivity_OnCreate(JNIEnv *env, jobject thiz){
 	lua_register(L, "CreateImageEx", CreateImageEx);
 	lua_register(L, "CreateTransImage", CreateTransImage);
 	lua_register(L, "DeleteImage", DeleteImage);
-	lua_register(L, "PrintText", PrintText);
 	lua_register(L, "GetWidth", GetWidth);
 	lua_register(L, "GetHeight", GetHeight);
 	lua_register(L, "GetText", GetText);

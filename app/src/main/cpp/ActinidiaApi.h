@@ -67,32 +67,9 @@ int DeleteImage(lua_State *L)
     if (n != 1) return 0;
     jobject g = (jobject)lua_tointeger(L, 1);
     lua_pop(L, 1);
-    api_env->DeleteGlobalRef(g);   // !!!
+    if (g!=NULL)
+        api_env->DeleteGlobalRef(g);   // !!!
     return 0;
-}
-
-// lua: bool PrintText(g, x, y, str, FontName, FontSize, color), color 0x00BBGGRR
-int PrintText(lua_State *L)
-{
-    int n = lua_gettop(L);
-    if (n != 7) return 0;
-    jobject g = (jobject)lua_tointeger(L, 1);
-    float x = (float)lua_tonumber(L, 2);
-    float y = (float)lua_tonumber(L, 3);
-    const char* str = lua_tostring(L, 4);
-    const char* FontName = lua_tostring(L, 5);
-    LUA_NUMBER FontSize = lua_tonumber(L, 6);
-    auto color = lua_tointeger(L, 7);
-    jstring jstr = api_env->NewStringUTF(str);
-    jstring jFontName = api_env->NewStringUTF(FontName);
-    api_env->CallVoidMethod(
-            api_thiz,api_env->GetMethodID(jcls,"printText",
-                                          "(Landroid/graphics/Bitmap;FFLjava/lang/String;Ljava/lang/String;FIII)V"),
-            g, x, y, jstr, jFontName, FontSize, (char)color, (char)(color>>8), (char)(color>>16)
-    );
-    lua_pop(L, 7);
-    lua_pushboolean(L, true);
-    return 1;
 }
 
 // lua: int GetWidth(g)
@@ -282,7 +259,6 @@ int AlphaBlendEx(lua_State *L)
     );
     return 0;
 }
-
 
 // lua: void PasteToWnd(WndGraphic, g)
 int PasteToWnd(lua_State *L)

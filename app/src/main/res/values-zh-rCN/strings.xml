@@ -26,4 +26,5 @@
     <string name="update_found">新版本(%1$s)已发布!</string>
     <string name="confirm_update">现在就下载新版本?</string>
     <string name="no_update">已经是最新版本!</string>
+    <string name="please_wait">请稍候&#8230;</string>
 </resources>

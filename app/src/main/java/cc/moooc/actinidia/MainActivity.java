@@ -1,15 +1,13 @@
 package cc.moooc.actinidia;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Environment;
 import android.os.Bundle;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -21,7 +19,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.Properties;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends Activity {
 
     private File actinidiaDir;  // sdcard/ActinidiaGames
     private String[] gameList;  // game folders
@@ -46,14 +44,13 @@ public class MainActivity extends AppCompatActivity {
         switch (item.getItemId()) {
             case R.id.menu_local:
                 // Permission's check
-                if (PackageManager.PERMISSION_GRANTED == ContextCompat.checkSelfPermission(
-                        MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                if (PackageManager.PERMISSION_GRANTED == checkSelfPermission(
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
                     // available
                     listLocalGames();
                 } else {
                     // Request for permission
-                    ActivityCompat.requestPermissions(MainActivity.this,
-                            new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSION_REQUEST_CODE);
+                    requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSION_REQUEST_CODE);
                 }
                 break;
             case R.id.menu_about:

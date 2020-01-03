@@ -9,7 +9,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:background="@mipmap/ic_launcher"
-        app:srcCompat="@mipmap/ic_launcher"
+        android:src="@mipmap/ic_launcher"
         android:layout_marginBottom="12dp"
         android:layout_above="@+id/textView_app_version"
         android:layout_centerHorizontal="true" />

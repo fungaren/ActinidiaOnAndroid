@@ -18,7 +18,7 @@
         android:paddingLeft="8dp"
         android:paddingRight="8dp"
         android:text="TextView"
-        android:textColor="?attr/editTextColor"
+        android:textColor="?android:attr/editTextColor"
         android:textSize="18sp" />
 
     <ImageView
@@ -27,7 +27,7 @@
         android:layout_height="wrap_content"
         android:adjustViewBounds="true"
         android:paddingTop="8dp"
-        app:srcCompat="?android:attr/colorBackground" />
+        tools:src="@android:drawable/sym_def_app_icon" />
 
     <TextView
         android:id="@+id/textView_description"
@@ -35,7 +35,7 @@
         android:layout_height="wrap_content"
         android:padding="8dp"
         android:text="TextView"
-        android:textColor="?attr/editTextColor" />
+        android:textColor="?android:attr/editTextColor" />
 
     <LinearLayout
         android:layout_width="match_parent"

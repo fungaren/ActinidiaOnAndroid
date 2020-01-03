@@ -1,8 +1,6 @@
 #ifndef ACTINIDIA_ACTINIDIAAPI_H
 #define ACTINIDIA_ACTINIDIAAPI_H
 
-#endif //ACTINIDIA_ACTINIDIAAPI_H
-
 #include <lua.hpp>
 
 JNIEnv *api_env;
@@ -377,3 +375,5 @@ int SaveSetting(lua_State *L)
             jkey, jval);
     return 0;
 }
+
+#endif //ACTINIDIA_ACTINIDIAAPI_H

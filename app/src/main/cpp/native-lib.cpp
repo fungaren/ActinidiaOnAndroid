@@ -37,7 +37,7 @@ Java_cc_moooc_actinidia_GameActivity_OnCreate(JNIEnv *env, jobject thiz){
     lua_register(L, "GetSetting", GetSetting);
     lua_register(L, "SaveSetting", SaveSetting);
 
-    const char* main = "res/lua/main.lua";
+    const char* main = "lua/main.lua";
     jstring jmain = env->NewStringUTF(main);
     jstring jstr = (jstring)env->CallObjectMethod(
             thiz, env->GetMethodID(jcls,"getText","(Ljava/lang/String;)Ljava/lang/String;"),

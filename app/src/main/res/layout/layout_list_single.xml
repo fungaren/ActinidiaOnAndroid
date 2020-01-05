@@ -91,11 +91,11 @@
         android:orientation="horizontal">
 
         <Button
-            android:id="@+id/button_get_buy"
+            android:id="@+id/button_unlock"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="0"
-            android:text="Button" />
+            android:text="@string/unlock" />
 
         <Button
             android:id="@+id/button_update"

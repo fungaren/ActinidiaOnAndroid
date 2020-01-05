@@ -1,18 +1,16 @@
 # Actinidia on Android
 
-![Actinidia](http://7nas1f.com1.z0.glb.clouddn.com/actinidia_logo.png)
+![](https://moooc.oss-cn-shenzhen.aliyuncs.com/blog/actinidia_on_android_app_1_0_5.jpg)
 
-* Environment: Android 5.0+
-
-* [Download](http://moooc.cc/actinidia.apk) and install
+* Environment: Android 6 or higher
+* Launch your local games: put `.res` files into the sdcard directory.
+* [Download](release) and install
 
 ## Preview
 
-![flappy_bird](http://7nas1f.com1.z0.glb.clouddn.com/actinidia_flappy.jpg)
+![preview](https://moooc.oss-cn-shenzhen.aliyuncs.com/blog/actinidia_rpg.jpg)
 
-<img src="http://7nas1f.com1.z0.glb.clouddn.com/actinidia_on_android_app_1_0_5.jpg" alt="app" width="405" height="720">
 
 ## Build your game
 
 See [ActinidiaGames](https://github.com/mooction/ActinidiaGames).
-

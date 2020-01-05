@@ -12,11 +12,13 @@ public class Game {
     private String date;
     private String version;
     private int star;
-    private String key;
+    private boolean available;
     private int size;
+    private String banner;
+    private String gamefile;
 
     public Game(int id, String name, String description, String author, String date,
-                String version, int star, String key, int size) {
+                String version, int star, boolean available, int size, String banner, String gamefile) {
         this.id = id;
         this.name = name;
         this.description = description;
@@ -24,8 +26,10 @@ public class Game {
         this.date = date;
         this.version = version;
         this.star = star;
-        this.key = key;
+        this.available = available;
         this.size = size;
+        this.banner = banner;
+        this.gamefile = gamefile;
     }
 
     public int getId() {
@@ -56,11 +60,23 @@ public class Game {
         return star;
     }
 
-    public String getKey() {
-        return key;
+    public boolean isAvailable() {
+        return available;
+    }
+
+    public void setAvailable(boolean available) {
+        this.available = available;
     }
 
     public int getSize() {
         return size;
+    }
+
+    public String getBanner() {
+        return banner;
+    }
+
+    public String getGamefile() {
+        return gamefile;
     }
 }

@@ -21,14 +21,15 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Toast;
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Reader;
+import java.io.UnsupportedEncodingException;
 import java.io.Writer;
+import java.util.Date;
 import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -43,17 +44,17 @@ public class GameActivity extends Activity {
         System.loadLibrary("native-lib");
     }
 
-    private File gameDir;
-    private boolean vertical = false;  // in "res/config.ini"
+    private ResourcePack pack;          // Resource Pack
+    private boolean vertical = false;   // config.ini
 
-    private Timer timer;               // Refresh the surface view. Any tasks will be processed here.
+    private Timer timer;                // Refresh the surface view. Any tasks will be processed here.
     private TimerTask paint_loop;
     private SoundPool sp;
     private final static int MEDIAPLAYER_ID = 256;
-    private MediaPlayer mp;            // for loop sound
+    private MediaPlayer mp;             // for loop sound
 
-    private File data_file;            // user data ("res/data")
-    private Properties prop;           // load settings at beginning, save setting on destroy
+    private File data_file;             // user data ("res/data")
+    private Properties prop;            // load settings at beginning, save setting on destroy
 
     /**
      * Make preparations.
@@ -62,12 +63,27 @@ public class GameActivity extends Activity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Intent i = getIntent();
-        if(i != null) {
+        File gameDir, gameRes;
+        if (i != null) {
             gameDir = (File)i.getSerializableExtra("gameDir");
+            gameRes = (File)i.getSerializableExtra("gameRes");
             vertical = i.getBooleanExtra("vertical", false);    // horizontal for default
-            if(!vertical) {                  // a new activity is vertical
+            if (!vertical) {                  // a new activity is vertical
                 setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
             }
+        } else {
+            Log.e("actinidia", "NO INTENT");
+            finish();
+            return;
+        }
+
+        try {
+            pack = new ResourcePack(gameRes);
+        } catch (IOException e) {
+            Toast.makeText(this, R.string.failed_to_load_res, Toast.LENGTH_LONG).show();
+            e.printStackTrace();
+            finish();
+            return;
         }
 
         requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -312,27 +328,18 @@ public class GameActivity extends Activity {
         return bmp.getHeight();
     }
     public String getText(String pathname) {
-        String out = new String();
-        try
-        {
-            File f = new File(gameDir, pathname.substring(4).replace('\\','/'));      // trim "res/" at the beginning
-            BufferedReader r = new BufferedReader(new FileReader(f));
-            String line;
-
-            while((line = r.readLine())!=null) {
-                out+=line+"\n";
-            }
+        byte[] data = pack.readResource(pathname);
+        try {
+            String text = new String(data, "utf-8");
+            return text;
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+            return "";
         }
-        catch(IOException e){}
-        return out;
     }
     public Bitmap getImage(String pathname) {
-        try {
-            File f = new File(gameDir, pathname.substring(4).replace('\\','/'));      // trim "res/" at the beginning
-            return BitmapFactory.decodeStream(new FileInputStream(f));
-        } catch (IOException e) {
-            return null;
-        }
+        byte[] data = pack.readResource(pathname);
+        return BitmapFactory.decodeByteArray(data, 0, data.length);
     }
     public void pasteToImage(Bitmap gDest, Bitmap gSrc, float xDest, float yDest) {
         Canvas c = new Canvas(gDest);
@@ -376,17 +383,30 @@ public class GameActivity extends Activity {
                 new Paint(Paint.ANTI_ALIAS_FLAG));
     }
     public int getSound(String pathname, boolean bLoop) {
-        String path = gameDir.toString() + pathname.substring(3).replace('\\', '/');
+        byte[] data = pack.readResource(pathname);
+        File tempFile;
+        try {
+            tempFile = File.createTempFile(new Date().toString(), "mp3", getCacheDir());
+            tempFile.deleteOnExit();
+            FileOutputStream fos = new FileOutputStream(tempFile);
+            fos.write(data);
+            fos.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+            finish();
+            return 0;
+        }
+
         if (bLoop) {
             try {
-                mp.setDataSource(path);
+                mp.setDataSource(tempFile.getPath());
                 mp.prepareAsync();
             } catch (IOException e) {
                 e.printStackTrace();
             }
             return MEDIAPLAYER_ID;
         } else {
-            return sp.load(path, 1);
+            return sp.load(tempFile.getPath(), 1);
         }
     }
     public void stopSound(int sound) {

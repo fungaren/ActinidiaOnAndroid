@@ -9,14 +9,12 @@ import android.graphics.BitmapFactory;
 import android.graphics.Outline;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
 import android.widget.BaseAdapter;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RatingBar;
@@ -36,27 +34,23 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 /**
  * Game list fragment
  */
 public class GameListFragment extends ListFragment {
     private List<Game> games = new ArrayList<>();
-    private List<Integer> assets = new ArrayList<>();
     private GameArrayAdapter adapter;
 
-    private static final String ASSET_FILE = "asset.txt";
-    private static final String CACHE_FILE = "cache.txt";
-    private static final String BANNER_IMG = "/banner.jpg";
-    private static final String GAME_LIST_URL = "http://moooc.cc/games.php";
-    private static final String GAME_PATH_URL = "http://moooc.cc/games/";
-    private static final String GAME_ZIP = "/game.zip";
-
-    private static final String FREE_GAME = "no";
+    private static final String GAME_LIST_CACHE = "cache.txt";
+    private static final String GAME_LIST_URL = "https://demo.moooc.cc/game.php";
 
     private File getCacheImage(int game_id){
         return new File(getActivity().getCacheDir(), game_id + ".png");
@@ -121,7 +115,7 @@ public class GameListFragment extends ListFragment {
                 iv.setImageBitmap(BitmapFactory.decodeStream(in));
             } catch (FileNotFoundException e) {
                 // download image
-                ImageAsyncLoad async = new ImageAsyncLoad(GAME_PATH_URL+game.getId()+BANNER_IMG,iv,game.getId());
+                ImageAsyncLoad async = new ImageAsyncLoad(game.getBanner(), iv, game.getId());
                 async.execute();
             } finally {
                 if (in != null) {
@@ -151,52 +145,34 @@ public class GameListFragment extends ListFragment {
             TextView tv_author = (TextView)convertView.findViewById(R.id.textView_author);
             tv_author.setText(game.getAuthor());
 
-            Button btn_get_buy = (Button) convertView.findViewById(R.id.button_get_buy);
-            btn_get_buy.setVisibility(View.VISIBLE);
             Button btn_update = (Button) convertView.findViewById(R.id.button_update);
             btn_update.setVisibility(View.GONE);
             Button btn_delete = (Button) convertView.findViewById(R.id.button_delete);
             btn_delete.setVisibility(View.GONE);
             Button btn_run = (Button) convertView.findViewById(R.id.button_run);
             btn_run.setVisibility(View.GONE);
-
-            // Do NOT possess current game
-            if (!assets.contains(game.getId())) {
-                btn_get_buy.setText(getString(game.getKey().equals(FREE_GAME) ? R.string.unlock : R.string.buy));
-                btn_get_buy.setTag(R.id.TAG_CURRENT_GAME, game);
-                btn_get_buy.setOnClickListener(new View.OnClickListener() {
-                    EditText editText;
+            Button btn_unlock = (Button) convertView.findViewById(R.id.button_unlock);
+            if (game.isAvailable())
+            {
+                btn_unlock.setVisibility(View.VISIBLE);
+                btn_unlock.setTag(R.id.TAG_CURRENT_GAME, game);
+                btn_unlock.setOnClickListener(new View.OnClickListener() {
                     Button btn;
                     @Override
                     public void onClick(View v) {
                         Game game = (Game) v.getTag(R.id.TAG_CURRENT_GAME);
                         btn = (Button)v;
-                        if (game.getKey().equals(FREE_GAME)) {
-                            // free game, unlock directly.
-                            assets.add(game.getId());
-                            unlock_game();
-                        } else {
-                            // Require the key
-                            editText = new EditText(getActivity());
-                            new AlertDialog.Builder(getActivity())
-                                    .setTitle(getText(R.string.input_key))
-                                    .setView(editText)
-                                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialog, int which) {
-                                            Game game = (Game)btn.getTag(R.id.TAG_CURRENT_GAME);
-                                            if (editText.getText().toString().equals(game.getKey())) {
-                                                assets.add(game.getId());
-                                                unlock_game();
-                                            } else {
-                                                Toast.makeText(getActivity(), getText(R.string.wrong_key),
-                                                        Toast.LENGTH_SHORT).show();
-                                            }
-
-                                        }
-                                    }).setNegativeButton(android.R.string.cancel,null)
-                                    .show();
-                        }
+                        new AlertDialog.Builder(getActivity())
+                                .setTitle(getText(R.string.unlock))
+                                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        Game game = (Game)btn.getTag(R.id.TAG_CURRENT_GAME);
+                                        game.setAvailable(true);
+                                        unlock_game();
+                                    }
+                                }).setNegativeButton(android.R.string.cancel,null)
+                                .show();
                     }
 
                     // click the button to download
@@ -206,73 +182,73 @@ public class GameListFragment extends ListFragment {
                         Toast.makeText(getActivity(), getText(R.string.unlock_success), Toast.LENGTH_SHORT).show();
                     }
                 });
-            } else {
-                // Possessed game
-                File game_dir = getGameDir(game.getId());
-                if (game_dir.exists()) {
-                    // Installed
-                    btn_get_buy.setVisibility(View.GONE);
-
-                    // Check update
-                    FileReader reader = null;
-                    try {
-                        reader = new FileReader(getLogFile(game.getId()));
-                        String[] install_date = new BufferedReader(reader).readLine().split("\\.");
-                        if (compareDate(game.getDate().split("\\."), install_date)>0) {
-                            // out of date
-                            btn_update.setVisibility(View.VISIBLE);
-                            btn_update.setTag(R.id.TAG_CURRENT_GAME, game);
-                            btn_update.setOnClickListener(new DownloadListener());
-                        }
-                    } catch (IOException e){
-
-                    } finally {
-                        if (reader!=null){
-                            try{reader.close();}
-                            catch (IOException e){}
-                        }
-                    }
-
-                    btn_delete.setVisibility(View.VISIBLE);
-                    btn_delete.setTag(R.id.TAG_CURRENT_GAME, game);
-                    btn_delete.setOnClickListener(new View.OnClickListener() {
-                        Game game;
-                        @Override
-                        public void onClick(View v) {
-                            game = (Game) v.getTag(R.id.TAG_CURRENT_GAME);
-                            // Confirm to delete
-                            new AlertDialog.Builder(getActivity()).setTitle(android.R.string.dialog_alert_title)
-                                    .setMessage(getString(R.string.confirm_delete))
-                                    .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-                                        @Override
-                                        public void onClick(DialogInterface dialog, int which) {
-                                            FileUtil.deleteDir(getGameDir(game.getId()));
-                                            Toast.makeText(getActivity(), R.string.delete_success, Toast.LENGTH_SHORT).show();
-                                            // Restart the activity
-                                            getActivity().recreate();
-                                        }
-                                    }).setNegativeButton(android.R.string.cancel, null)
-                                    .show();
-                        }
-                    });
-                    btn_run.setVisibility(View.VISIBLE);
-                    btn_run.setTag(R.id.TAG_CURRENT_GAME, game);
-                    btn_run.setOnClickListener(new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            Game game = (Game) v.getTag(R.id.TAG_CURRENT_GAME);
-                            // Launch the game
-                            MainActivity ma = (MainActivity)getActivity();
-                            ma.launchGame(getGameDir(game.getId()));
-                        }
-                    });
-                } else {
-                    // Possessed, but haven't installed
-                    btn_get_buy.setTag(R.id.TAG_CURRENT_GAME, game);
-                    btn_get_buy.setText(getText(R.string.download));
-                    btn_get_buy.setOnClickListener(new DownloadListener());
-                }
             }
+            // Possessed game
+            File game_dir = getGameDir(game.getId());
+            if (game_dir.exists()) {
+                // Installed
+                btn_unlock.setVisibility(View.GONE);
+
+                // Check update
+                FileReader reader = null;
+                try {
+                    reader = new FileReader(getLogFile(game.getId()));
+                    String[] install_date = new BufferedReader(reader).readLine().split("\\.");
+                    if (compareDate(game.getDate().split("\\."), install_date)>0) {
+                        // out of date
+                        btn_update.setVisibility(View.VISIBLE);
+                        btn_update.setTag(R.id.TAG_CURRENT_GAME, game);
+                        btn_update.setOnClickListener(new DownloadListener());
+                    }
+                } catch (IOException e){
+
+                } finally {
+                    if (reader!=null){
+                        try{reader.close();}
+                        catch (IOException e){}
+                    }
+                }
+
+                btn_delete.setVisibility(View.VISIBLE);
+                btn_delete.setTag(R.id.TAG_CURRENT_GAME, game);
+                btn_delete.setOnClickListener(new View.OnClickListener() {
+                    Game game;
+                    @Override
+                    public void onClick(View v) {
+                        game = (Game) v.getTag(R.id.TAG_CURRENT_GAME);
+                        // Confirm to delete
+                        new AlertDialog.Builder(getActivity()).setTitle(android.R.string.dialog_alert_title)
+                                .setMessage(getString(R.string.confirm_delete))
+                                .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+                                        FileUtil.deleteDir(getGameDir(game.getId()));
+                                        Toast.makeText(getActivity(), R.string.delete_success, Toast.LENGTH_SHORT).show();
+                                        // Restart the activity
+                                        getActivity().recreate();
+                                    }
+                                }).setNegativeButton(android.R.string.cancel, null)
+                                .show();
+                    }
+                });
+                btn_run.setVisibility(View.VISIBLE);
+                btn_run.setTag(R.id.TAG_CURRENT_GAME, game);
+                btn_run.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        Game game = (Game) v.getTag(R.id.TAG_CURRENT_GAME);
+                        // Launch the game
+                        MainActivity ma = (MainActivity)getActivity();
+                        ma.launchGame(getGameDir(game.getId()));
+                    }
+                });
+            } else {
+                // Possessed, but haven't installed
+                btn_unlock.setTag(R.id.TAG_CURRENT_GAME, game);
+                btn_unlock.setText(getText(R.string.download));
+                btn_unlock.setOnClickListener(new DownloadListener());
+            }
+
             return convertView;
         }
     }
@@ -287,7 +263,7 @@ public class GameListFragment extends ListFragment {
         @Override
         public void onClick(View v) {
             if (isDownloading) {
-                Toast.makeText(getActivity(),R.string.please_wait,Toast.LENGTH_SHORT).show();
+                Toast.makeText(getActivity(),R.string.please_wait, Toast.LENGTH_SHORT).show();
                 return;
             }
             game = (Game) v.getTag(R.id.TAG_CURRENT_GAME);
@@ -297,7 +273,7 @@ public class GameListFragment extends ListFragment {
                     .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialog, int which) {
-                            GameAsyncInstall async = new GameAsyncInstall(game.getId());
+                            GameAsyncInstall async = new GameAsyncInstall(game);
                             isDownloading = true;
                             async.execute();
                         }
@@ -335,17 +311,17 @@ public class GameListFragment extends ListFragment {
 
         @Override
         protected Void doInBackground(Void... v) {
-            String game_list_str = HttpUtil.getHttpContent(GAME_LIST_URL,"utf-8");
+            String json = HttpUtil.getHttpContent(GAME_LIST_URL,"utf-8");
 
-            if (game_list_str.isEmpty())
+            if (json.isEmpty())
                 return null;
 
             // Cache
             OutputStream out = null;
             try {
-                out = getActivity().openFileOutput(CACHE_FILE, Context.MODE_PRIVATE);
-                out.write(game_list_str.getBytes());
-            } catch (IOException e){
+                out = getActivity().openFileOutput(GAME_LIST_CACHE, Context.MODE_PRIVATE);
+                out.write(json.getBytes());
+            } catch (IOException e) {
                 e.printStackTrace();
             } finally {
                 if (out != null) {
@@ -356,7 +332,11 @@ public class GameListFragment extends ListFragment {
             }
 
             games.clear();
-            GameListFragment.parseRespond(game_list_str, games);
+            try {
+                parseRespond(new JSONArray(json), games);
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
             return null;
         }
     }
@@ -383,7 +363,7 @@ public class GameListFragment extends ListFragment {
         @Override
         protected void onPostExecute(Void v) {
             super.onPostExecute(v);
-            if (bmp!=null)
+            if (bmp != null)
                 iv.setImageBitmap(bmp);
         }
 
@@ -395,13 +375,13 @@ public class GameListFragment extends ListFragment {
         @Override
         protected Void doInBackground(Void... v) {
             bmp = HttpUtil.getHttpImage(imageURL);
-            if (bmp!=null) {
+            if (bmp != null) {
                 // image cache
                 OutputStream out = null;
                 try {
                     out = new FileOutputStream(getCacheImage(id));
                     bmp.compress(Bitmap.CompressFormat.PNG, 100, out);
-                } catch (IOException e){
+                } catch (IOException e) {
                     e.printStackTrace();
                 } finally {
                     if (out != null) {
@@ -417,11 +397,11 @@ public class GameListFragment extends ListFragment {
 
     // Download and install game
     private class GameAsyncInstall extends AsyncTask<Void,Void,Void> {
-        private int game_id;
+        private Game game;
         private AlertDialog dlg;
-        public GameAsyncInstall(int game_id) {
+        public GameAsyncInstall(Game game) {
             super();
-            this.game_id = game_id;
+            this.game = game;
         }
 
         @Override
@@ -436,7 +416,7 @@ public class GameListFragment extends ListFragment {
             super.onPostExecute(v);
             if (dlg.isShowing())
                 dlg.dismiss();
-            Toast.makeText(getActivity(),R.string.install_success, Toast.LENGTH_SHORT).show();
+            Toast.makeText(getActivity(), R.string.install_success, Toast.LENGTH_SHORT).show();
             isDownloading = false;
             // Restart the activity
             getActivity().recreate();
@@ -450,12 +430,12 @@ public class GameListFragment extends ListFragment {
         @Override
         protected Void doInBackground(Void... v) {
             // Download game
-            File zipFile = getZipFile(game_id);
-            HttpUtil.downloadFile(GAME_PATH_URL + game_id + GAME_ZIP, zipFile);
+            File zipFile = getZipFile(game.getId());
+            HttpUtil.downloadFile(game.getGamefile(), zipFile);
 
             // Check if has installed
-            File game_dir = getGameDir(game_id);
-            if (game_dir.exists()){
+            File game_dir = getGameDir(game.getId());
+            if (game_dir.exists()) {
                 // remove the old and replace
                 FileUtil.deleteDir(game_dir);
             }
@@ -466,12 +446,12 @@ public class GameListFragment extends ListFragment {
             // Create LOG_FILE, write install-time
             FileWriter writer = null;
             try {
-                writer = new FileWriter(getLogFile(game_id));
+                writer = new FileWriter(getLogFile(game.getId()));
                 writer.write(new SimpleDateFormat("yyyy.MM.dd", Locale.getDefault()).format(new Date()).toCharArray());
-            } catch (IOException e){
+            } catch (IOException e) {
 
             } finally {
-                if (writer!=null){
+                if (writer!=null) {
                     try{writer.close();}
                     catch (IOException e){}
                 }
@@ -499,44 +479,31 @@ public class GameListFragment extends ListFragment {
 
     /**
      * <p>Parse http respond to List. Remove all '\r' automatically.</p>
-     * @param game_list_str string to parse
+     * @param json JSONObject
      * @param games List
      */
-    static void parseRespond(String game_list_str, List<Game> games) {
-        int id=0,begin=0,end;
-        game_list_str = game_list_str.replaceAll("\r","");
-        while((end = game_list_str.indexOf("\n\n",begin))>0) {
-            String s = game_list_str.substring(begin, end);
-            begin = end + 2;
-            int p = s.indexOf('=');
-            if (p < 0) break;
-            int e = s.indexOf('\n', p);
-            String info_name = s.substring(p + 1, e);
-            p = s.indexOf('=', e);
-            e = s.indexOf('\n', p);
-            String info_description = s.substring(p + 1, e);
-            p = s.indexOf('=', e);
-            e = s.indexOf('\n', p);
-            String info_author = s.substring(p + 1, e);
-            p = s.indexOf('=', e);
-            e = s.indexOf('\n', p);
-            String info_date = s.substring(p + 1, e);
-            p = s.indexOf('=', e);
-            e = s.indexOf('\n', p);
-            String info_version = s.substring(p + 1, e);
-            p = s.indexOf('=', e);
-            e = s.indexOf('\n', p);
-            String info_star = s.substring(p + 1, e);
-            p = s.indexOf('=', e);
-            e = s.indexOf('\n', p);
-            String info_key = s.substring(p + 1, e);
-            p = s.indexOf('=', e);
-            String info_size = s.substring(p + 1, s.length());
-            games.add(new Game(id, info_name, info_description, info_author, info_date, info_version,
-                    Integer.parseInt(info_star), info_key, Integer.parseInt(info_size)));
-            ++id;
+    void parseRespond(JSONArray json, List<Game> games) {
+        try {
+            for (int i=0; i < json.length(); i++) {
+                JSONObject obj = json.getJSONObject(i);
+                Game g = new Game(
+                        obj.getInt("id"),
+                        obj.getString("name"),
+                        obj.getString("description"),
+                        obj.getString("author"),
+                        obj.getString("date"),
+                        obj.getString("version"),
+                        obj.getInt("star"),
+                        obj.getBoolean("available"),
+                        obj.getInt("size"),
+                        obj.getString("banner"),
+                        obj.getString("gamefile")
+                );
+                games.add(g);
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
-        Collections.reverse(games);
     }
 
     @Override
@@ -546,39 +513,20 @@ public class GameListFragment extends ListFragment {
         adapter = new GameArrayAdapter(games);
         this.setListAdapter(adapter);
 
-        // Load asset
-        InputStream asset_in = null;
-        try {
-            asset_in = getActivity().openFileInput(ASSET_FILE);
-            BufferedReader reader = new BufferedReader(new InputStreamReader(asset_in));
-            String line;
-            while ((line = reader.readLine())!=null) {
-                assets.add(Integer.parseInt(line));
-            }
-        } catch (IOException e){
-
-        } finally {
-            if (asset_in != null) {
-                try {
-                    asset_in.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
         // Load game list cache
         InputStream in = null;
         try {
-            in = getActivity().openFileInput(CACHE_FILE);
+            in = getActivity().openFileInput(GAME_LIST_CACHE);
             BufferedReader reader = new BufferedReader(new InputStreamReader(in));
             char[] bytes = new char[1024];
             StringBuilder sb = new StringBuilder();
             int size;
-            while ((size=reader.read(bytes))>0) {
-                sb.append(bytes,0,size);
+            while ((size = reader.read(bytes)) > 0) {
+                sb.append(bytes, 0, size);
             }
-            parseRespond(sb.toString(),games);
+            parseRespond(new JSONArray(sb.toString()), games);
+        } catch (JSONException e) {
+            e.printStackTrace();
         } catch (IOException e) {
 
         } finally {
@@ -592,35 +540,18 @@ public class GameListFragment extends ListFragment {
         }
 
         // Get game list
-        GameAsyncLoad async = new GameAsyncLoad(games,adapter);
+        GameAsyncLoad async = new GameAsyncLoad(games, adapter);
         async.execute();
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_list,container,false);
+        View v = inflater.inflate(R.layout.fragment_list, container,false);
         return v;
     }
 
     @Override
     public void onDestroy() {
-        // Save assets
-        OutputStream out = null;
-        try {
-            out = getActivity().openFileOutput(ASSET_FILE, Context.MODE_PRIVATE);
-            for (Integer i : assets) {
-                out.write(i.toString().getBytes());
-                out.write('\n');
-            }
-        } catch (IOException e){
-            e.printStackTrace();
-        } finally {
-            if (out != null) {
-                try {out.close();}
-                catch (IOException e)
-                {e.printStackTrace();}
-            }
-        }
         super.onDestroy();
     }
 }

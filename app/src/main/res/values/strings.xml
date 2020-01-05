@@ -7,7 +7,6 @@
     <string name="warn">Please provide SD Card access permission!</string>
     <string name="github">Project page on Github</string>
     <string name="no_network">No network!</string>
-    <string name="buy">Buy</string>
     <string name="unlock">Unlock</string>
     <string name="download">Download</string>
     <string name="update">Update</string>
@@ -15,8 +14,6 @@
     <string name="run">Run</string>
     <string name="copyright">Copyright &#169; 2020\nmoooc.cc</string>
     <string name="visit_bbs">Visit forum</string>
-    <string name="input_key">Please input the key</string>
-    <string name="wrong_key">Wrong key!</string>
     <string name="unlock_success">Unlock successfully!</string>
     <string name="confirm_download">Will download %1$.2fMiB, continue?</string>
     <string name="wait_download">Downloading&#8230;</string>
@@ -28,4 +25,5 @@
     <string name="confirm_update">Download the new version now?</string>
     <string name="no_update">Already the latest version!</string>
     <string name="please_wait">Please wait&#8230;</string>
+    <string name="failed_to_load_res">Failed to load game resources！</string>
 </resources>

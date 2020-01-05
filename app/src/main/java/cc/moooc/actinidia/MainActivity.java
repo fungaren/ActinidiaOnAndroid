@@ -8,20 +8,21 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Environment;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.Reader;
+import java.io.InputStream;
+import java.util.LinkedList;
 import java.util.Properties;
 
 public class MainActivity extends Activity {
 
-    private File actinidiaDir;  // sdcard/ActinidiaGames
     private String[] gameList;  // game folders
 
     private static final int PERMISSION_REQUEST_CODE = 1;
@@ -61,16 +62,22 @@ public class MainActivity extends Activity {
         return super.onOptionsItemSelected(item);
     }
 
-    private void listLocalGames(){
-        if(Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)){
+    private void listLocalGames() {
+        if(Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
 
             File sdCardDir = Environment.getExternalStorageDirectory();
-            actinidiaDir = new File(sdCardDir, "ActinidiaGames");
-            if(!actinidiaDir.exists()){
-                actinidiaDir.mkdir();           // create directories
-            }
-            gameList = actinidiaDir.list();     // list games
 
+            File[] files = sdCardDir.listFiles();     // list games
+            LinkedList<String> list = new LinkedList<>();
+
+            for (File game_res : files)
+            {
+                if (game_res.isFile() && game_res.getName().endsWith(".res")) {
+                    Log.e("ACTINIDIA", "Found " + game_res.getAbsolutePath());
+                    list.push(game_res.getName());
+                }
+            }
+            gameList = list.toArray(new String[list.size()]);
             new AlertDialog.Builder(this)       // show dialog
                     .setTitle(getString(R.string.choose_game))
                     .setItems(gameList, dlg_listener).show();
@@ -83,32 +90,50 @@ public class MainActivity extends Activity {
             // Dismiss the dialog before goto another activity
             dialog.dismiss();
             // Directory of the selected game
-            launchGame(new File(actinidiaDir, gameList[which]));
+            launchGame(new File(Environment.getExternalStorageDirectory(), gameList[which]));
         }
     };
 
     /**
      * Play in GameActivity
-     * @param gameDir eg. ActinidiaGames/res-rpg
      */
-    public void launchGame(File gameDir){
+    public void launchGame(File gameDir) {
         boolean vertical;
-        try {
-            Reader config = new FileReader(new File(gameDir,"config.ini"));
-            Properties p = new Properties();
-            p.load(config);
-            vertical = p.getProperty("orientation","horizontal").equals("vertical");
-            config.close();
-        }
-        catch (IOException e) {
-            vertical = false;
-        }
+        File[] files = gameDir.listFiles();
+        for (File gameRes : files)
+        {
+            if (gameRes.isFile() && gameRes.getName().endsWith(".res"))
+            {
+                Log.e("ACTINIDIA", "Found " + gameRes.getAbsolutePath());
+                ResourcePack pack;
+                try {
+                    pack = new ResourcePack(gameRes);
+                } catch (IOException e) {
+                    Toast.makeText(this, R.string.failed_to_load_res, Toast.LENGTH_LONG).show();
+                    e.printStackTrace();
+                    return;
+                }
+                try {
+                    byte[] data = pack.readResource("config.ini");
+                    InputStream in = new ByteArrayInputStream(data);
+                    Properties p = new Properties();
+                    p.load(in);
+                    vertical = p.getProperty("orientation","horizontal").equals("vertical");
+                    in.close();
+                }
+                catch (IOException e) {
+                    vertical = false;
+                }
 
-        // Game start
-        Intent i = new Intent(MainActivity.this, GameActivity.class);
-        i.putExtra("vertical",vertical);
-        i.putExtra("gameDir",gameDir);
-        startActivity(i);
+                // Game start
+                Intent i = new Intent(MainActivity.this, GameActivity.class);
+                i.putExtra("vertical", vertical);
+                i.putExtra("gameDir", gameDir);
+                i.putExtra("gameRes", gameRes);
+                startActivity(i);
+                return;
+            }
+        }
     }
 
     @Override

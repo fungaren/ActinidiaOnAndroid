@@ -6,7 +6,6 @@
     <string name="warn">请提供SD卡访问权限！</string>
     <string name="github">Github 项目页面</string>
     <string name="no_network">无网络访问!</string>
-    <string name="buy">购买</string>
     <string name="unlock">解锁</string>
     <string name="download">下载</string>
     <string name="update">更新</string>
@@ -14,8 +13,6 @@
     <string name="run">运行</string>
     <string name="copyright">Copyright &#169; 2020\nmoooc.cc</string>
     <string name="visit_bbs">访问论坛</string>
-    <string name="input_key">请输入密钥</string>
-    <string name="wrong_key">错误的密钥！</string>
     <string name="unlock_success">解锁成功！</string>
     <string name="confirm_download">将下载 %1$.2fMiB, 继续？</string>
     <string name="wait_download">下载中&#8230;</string>
@@ -27,4 +24,5 @@
     <string name="confirm_update">现在就下载新版本?</string>
     <string name="no_update">已经是最新版本!</string>
     <string name="please_wait">请稍候&#8230;</string>
+    <string name="failed_to_load_res">游戏资源加载失败！</string>
 </resources>

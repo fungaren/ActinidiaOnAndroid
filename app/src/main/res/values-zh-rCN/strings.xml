@@ -5,7 +5,7 @@
     <string name="tip">确保已经添加SD卡访问权限</string>
     <string name="warn">请提供SD卡访问权限！</string>
     <string name="github">Github 项目页面</string>
-    <string name="no_network">无网络访问!</string>
+    <string name="no_network">没有网络连接</string>
     <string name="unlock">解锁</string>
     <string name="download">下载</string>
     <string name="update">更新</string>
@@ -25,4 +25,5 @@
     <string name="no_update">已经是最新版本!</string>
     <string name="please_wait">请稍候&#8230;</string>
     <string name="failed_to_load_res">游戏资源加载失败！</string>
+    <string name="invalid_resource_pack">无效的资源包！</string>
 </resources>

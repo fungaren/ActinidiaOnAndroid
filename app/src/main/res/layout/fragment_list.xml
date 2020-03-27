@@ -8,7 +8,9 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:divider="@android:color/transparent"
-        android:dividerHeight="20dp" />
+        android:dividerHeight="20dp" >
+
+    </ListView>
 
     <FrameLayout
         android:id="@android:id/empty"
@@ -23,5 +25,12 @@
             android:text="@string/no_network" />
 
     </FrameLayout>
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="@android:style/Widget.DeviceDefault.Light.ProgressBar.Large"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center" />
 
 </FrameLayout>

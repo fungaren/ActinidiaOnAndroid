@@ -16,6 +16,7 @@ import java.net.URL;
 import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.ListIterator;
+import java.util.zip.InflaterInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
@@ -58,13 +59,18 @@ class HttpUtil {
         return "";
     }
 
+    public interface DownloadCallback {
+        void updateDownloadState(int nDownloadedBytes);
+    }
+
     /**
      * Download file form Internet.
      * @param url A URL string
      * @param dest file path to save
+     * @param cb a callback to know how many bytes have been downloaded.
      * @return size of file, -1 for error.
      */
-    public static int downloadFile(String url, File dest) {
+    public static int downloadFile(String url, File dest, DownloadCallback cb) {
         HttpsURLConnection connection = null;
         if (dest.exists()) dest.delete();
         FileOutputStream out = null;
@@ -82,6 +88,8 @@ class HttpUtil {
             while ((size=in.read(bytes)) > 0) {
                 out.write(bytes,0,size);
                 total_size += size;
+                if (cb != null)
+                    cb.updateDownloadState(total_size);
             }
         } catch (IOException e) {
             return -1;
@@ -90,7 +98,7 @@ class HttpUtil {
                 connection.disconnect();
             }
             try{
-                if (out!=null)
+                if (out != null)
                     out.close();
             } catch (IOException e) {
 
@@ -151,7 +159,7 @@ class FileUtil {
      * @param dir Destination path
      * @param zipFile Source zip file
      */
-    public static void unzip(File dir, File zipFile) {
+    public static void unzip(File dir, File zipFile) throws IOException {
         ZipFile zip = null;
         try {
             zip = new ZipFile(zipFile);
@@ -175,13 +183,43 @@ class FileUtil {
                 out.close();
             }
         } catch (ZipException e) {
-
+            throw e;
         } catch (IOException e) {
-
+            throw e;
         } finally {
             try {
                 if (zip != null)
                     zip.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * Inflate
+     * @param dir Destination path
+     * @param compactFile Source file deflated by zlib
+     */
+    public static void inflate(File dir, File compactFile) throws IOException {
+        InflaterInputStream in = null;
+        try {
+            in = new InflaterInputStream(new FileInputStream(compactFile));
+            OutputStream out = new FileOutputStream(new File(dir, compactFile.getName()));
+            byte[] bytes = new byte[1024];
+            int size;
+            while ((size=in.read(bytes)) > 0) {
+                out.write(bytes,0, size);
+            }
+            out.close();
+        } catch (ZipException e) {
+            throw e;
+        } catch (IOException e) {
+            throw e;
+        } finally {
+            try {
+                if (in != null)
+                    in.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -228,7 +266,7 @@ class ResourcePack
         void newFile(InputStream in, String path, int dataSize) throws IOException;
     }
 
-    // All resources are load to memory, make sure enough capcity of the memory.
+    // All resources will be loaded into memory, make sure enough free space.
     private LinkedList<ResourceFile> list = new LinkedList<>();
 
     private static void parsePack(InputStream in, ParserCallback cb) throws IOException
@@ -267,8 +305,8 @@ class ResourcePack
                 cb.newFolder(relativePath);
 
                 // empty folder
-                if (dataSize == 0) {
-
+                if (dataSize == 0)
+                {
                     // calc remaining bytes in this folder to be read
                     if (!folder_size.isEmpty())
                     {

@@ -21,11 +21,10 @@ import java.io.InputStream;
 import java.util.LinkedList;
 import java.util.Properties;
 
-public class MainActivity extends Activity {
-
-    private String[] gameList;  // game folders
-
+public class MainActivity extends Activity
+{
     private static final int PERMISSION_REQUEST_CODE = 1;
+    private String[] gameList;  // resource files under the sdcard directory
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,7 +35,7 @@ public class MainActivity extends Activity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_main,menu);
+        getMenuInflater().inflate(R.menu.menu_main, menu);
         return super.onCreateOptionsMenu(menu);
     }
 
@@ -63,19 +62,16 @@ public class MainActivity extends Activity {
     }
 
     private void listLocalGames() {
-        if(Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
-
+        if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED))
+        {
             File sdCardDir = Environment.getExternalStorageDirectory();
-
             File[] files = sdCardDir.listFiles();     // list games
             LinkedList<String> list = new LinkedList<>();
 
             for (File game_res : files)
             {
-                if (game_res.isFile() && game_res.getName().endsWith(".res")) {
-                    Log.e("ACTINIDIA", "Found " + game_res.getAbsolutePath());
+                if (game_res.isFile() && game_res.getName().endsWith(".res"))
                     list.push(game_res.getName());
-                }
             }
             gameList = list.toArray(new String[list.size()]);
             new AlertDialog.Builder(this)       // show dialog
@@ -89,51 +85,55 @@ public class MainActivity extends Activity {
         public void onClick(DialogInterface dialog, int which) {
             // Dismiss the dialog before goto another activity
             dialog.dismiss();
-            // Directory of the selected game
-            launchGame(new File(Environment.getExternalStorageDirectory(), gameList[which]));
+            // the selected game resource file
+            File gameRes = new File(Environment.getExternalStorageDirectory(), gameList[which]);
+            try {
+                // Install (decompress) the compactFile to `game_dir/{id}.res`
+                FileUtil.inflate(getCacheDir(), gameRes);
+            } catch (IOException e) {
+                e.printStackTrace();
+                return;
+            }
+            launchGame(new File(getCacheDir(), gameRes.getName()));
         }
     };
 
     /**
      * Play in GameActivity
      */
-    public void launchGame(File gameDir) {
+    public void launchGame(File gameRes) {
         boolean vertical;
-        File[] files = gameDir.listFiles();
-        for (File gameRes : files)
-        {
-            if (gameRes.isFile() && gameRes.getName().endsWith(".res"))
-            {
-                Log.e("ACTINIDIA", "Found " + gameRes.getAbsolutePath());
-                ResourcePack pack;
-                try {
-                    pack = new ResourcePack(gameRes);
-                } catch (IOException e) {
-                    Toast.makeText(this, R.string.failed_to_load_res, Toast.LENGTH_LONG).show();
-                    e.printStackTrace();
-                    return;
-                }
-                try {
-                    byte[] data = pack.readResource("config.ini");
-                    InputStream in = new ByteArrayInputStream(data);
-                    Properties p = new Properties();
-                    p.load(in);
-                    vertical = p.getProperty("orientation","horizontal").equals("vertical");
-                    in.close();
-                }
-                catch (IOException e) {
-                    vertical = false;
-                }
-
-                // Game start
-                Intent i = new Intent(MainActivity.this, GameActivity.class);
-                i.putExtra("vertical", vertical);
-                i.putExtra("gameDir", gameDir);
-                i.putExtra("gameRes", gameRes);
-                startActivity(i);
-                return;
-            }
+        if (!gameRes.isFile() || !gameRes.getName().endsWith(".res")) {
+            Log.e("ACTINIDIA", "Cannot locate to resource file: "+ gameRes.getAbsolutePath());
+            return;
         }
+        Log.e("ACTINIDIA", "Found " + gameRes.getAbsolutePath());
+        ResourcePack pack;
+        try {
+            pack = new ResourcePack(gameRes);
+        } catch (IOException e) {
+            Toast.makeText(this, R.string.failed_to_load_res, Toast.LENGTH_LONG).show();
+            e.printStackTrace();
+            return;
+        }
+        try {
+            byte[] data = pack.readResource("config.ini");
+            InputStream in = new ByteArrayInputStream(data);
+            Properties p = new Properties();
+            p.load(in);
+            vertical = p.getProperty("orientation","horizontal").equals("vertical");
+            in.close();
+        }
+        catch (IOException e) {
+            vertical = false;
+        }
+
+        // Game start
+        Intent i = new Intent(MainActivity.this, GameActivity.class);
+        i.putExtra("vertical", vertical);
+        i.putExtra("gameDir", gameRes.getParentFile());
+        i.putExtra("gameRes", gameRes);
+        startActivity(i);
     }
 
     @Override

@@ -57,19 +57,19 @@ public class GameListFragment extends ListFragment {
     private static final String GAME_LIST_CACHE = "cache.txt";
     private static final String GAME_LIST_URL = "https://demo.moooc.cc/game.php";
 
-    private File getCacheImage(int game_id){
+    private File getCacheImage(int game_id) {
         return new File(getActivity().getCacheDir(), game_id + ".png");
     }
 
-    private File getGameDir(int game_id){
+    private File getGameDir(int game_id) {
         return new File(getActivity().getFilesDir(), game_id + "");
     }
 
-    private File getLogFile(int game_id){
+    private File getLogFile(int game_id) {
         return new File(getActivity().getFilesDir(), game_id + "/log.ini");
     }
 
-    private File getCompactFile(int game_id){
+    private File getCompactFile(int game_id) {
         return new File(getActivity().getCacheDir(), game_id +".res");
     }
 
@@ -258,7 +258,7 @@ public class GameListFragment extends ListFragment {
                         Game game = (Game) v.getTag(R.id.TAG_CURRENT_GAME);
                         // Launch the game
                         MainActivity ma = (MainActivity)getActivity();
-                        ma.launchGame(getGameDir(game.getId()));
+                        ma.launchGame(new File(getGameDir(game.getId()), game.getId()+".res"));
                     }
                 });
             }
@@ -483,8 +483,8 @@ public class GameListFragment extends ListFragment {
             }
             game_dir.mkdir();
 
-            // Install (decompress)
             try {
+                // Install (decompress) the compactFile to `game_dir/{id}.res`
                 FileUtil.inflate(game_dir, compactFile);
             } catch (IOException e) {
                 compactFile.delete();

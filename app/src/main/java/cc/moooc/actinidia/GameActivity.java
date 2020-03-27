@@ -1,13 +1,12 @@
 package cc.moooc.actinidia;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.graphics.Typeface;
-import android.media.MediaPlayer;
 import android.media.SoundPool;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -29,7 +28,11 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -49,16 +52,29 @@ public class GameActivity extends Activity {
 
     private Timer timer;                // Refresh the surface view. Any tasks will be processed here.
     private TimerTask paint_loop;
-    private SoundPool sp;
-    private final static int MEDIAPLAYER_ID = 256;
-    private MediaPlayer mp;             // for loop sound
+
+    private SoundPool sp;               // Audio support
+    private HashMap<Integer, SoundState> sounds;
 
     private File data_file;             // user data ("res/data")
     private Properties prop;            // load settings at beginning, save setting on destroy
 
+    static private class SoundState {
+        boolean loaded = false;
+        boolean loop;
+        private int play_count = 0;
+        public SoundState(boolean loop) {
+            this.loop = loop;
+        }
+        public void addCount() {
+            play_count += 1;
+        }
+    }
+
     /**
-     * Make preparations.
+     * Prepare for game
      */
+    @SuppressLint({"ClickableViewAccessibility", "SourceLockedOrientationActivity"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -67,17 +83,19 @@ public class GameActivity extends Activity {
         if (i != null) {
             gameDir = (File)i.getSerializableExtra("gameDir");
             gameRes = (File)i.getSerializableExtra("gameRes");
-            vertical = i.getBooleanExtra("vertical", false);    // horizontal for default
+            // horizontal for default
+            vertical = i.getBooleanExtra("vertical", false);
             if (!vertical) {                  // a new activity is vertical
                 setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
             }
         } else {
-            Log.e("actinidia", "NO INTENT");
+            Toast.makeText(this, R.string.failed_to_load_res, Toast.LENGTH_LONG).show();
             finish();
             return;
         }
 
         try {
+            // parse the resource pack
             pack = new ResourcePack(gameRes);
         } catch (IOException e) {
             Toast.makeText(this, R.string.failed_to_load_res, Toast.LENGTH_LONG).show();
@@ -89,24 +107,31 @@ public class GameActivity extends Activity {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
-        // Load settings
+        // Load settings and game data
         data_file = new File(gameDir, "data");
         prop = new Properties();
         try {
             Reader data_reader = new FileReader(data_file);
             prop.load(data_reader);
             data_reader.close();
-        } catch(IOException e) {}
+        } catch (IOException e) {
+            // ok, no matter
+        }
 
-        // init SoundPool & MediaPlayer
+        // init SoundPool
         sp = new SoundPool.Builder().setMaxStreams(255).build();
-        mp = new MediaPlayer();
-        mp.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
+        sp.setOnLoadCompleteListener(new SoundPool.OnLoadCompleteListener() {
             @Override
-            public void onPrepared(MediaPlayer mp) {
-                mp.start();
+            public void onLoadComplete(SoundPool soundPool, int sampleId, int status) {
+                SoundState state = sounds.get(sampleId);
+                state.loaded = true;
+                if (state.play_count > 0) {
+                    // Scripts have tried to play the sound before it is loaded
+                    playSound(sampleId);
+                }
             }
         });
+        sounds = new HashMap<Integer, SoundState>();
 
         // set SurfaceView
         sfv = new SurfaceView(this);
@@ -136,7 +161,7 @@ public class GameActivity extends Activity {
         });
 
         // set message handler
-        sfv.setOnTouchListener(new View.OnTouchListener() {
+        sfv.setOnTouchListener(new SurfaceView.OnTouchListener() {
             float oldX = 0, oldY = 0;
             float p1, p2;
 
@@ -232,7 +257,7 @@ public class GameActivity extends Activity {
             Writer data_writer = new FileWriter(data_file);
             prop.store(data_writer, null);   // save user data
             data_writer.close();
-        }catch (IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -242,12 +267,8 @@ public class GameActivity extends Activity {
         if (initialized) {
             OnClose(); // !!!
             saveUserData();
-
-            if (mp != null) {
-                mp.stop();
-                mp.release();
-            }
-            if(sp != null) {
+            // release all audios
+            if (sp != null) {
                 sp.release();
                 sp = null;
             }
@@ -258,8 +279,16 @@ public class GameActivity extends Activity {
     @Override
     protected void onPause() {
         if (initialized) {
-            if (mp.isPlaying())
-                mp.pause();
+            // the parent activity is paused, stop the timer and audios
+            LinkedList<Integer> list = new LinkedList<>();
+            for (int i : sounds.keySet()) {
+                // only loop audios need to stop
+                if (sounds.get(i).loop)
+                    list.add(i);
+            }
+            for (int i : list) {
+                stopSound(i);
+            }
             paint_loop.cancel();
             timer.schedule(new TimerTask() {
                 @Override
@@ -276,7 +305,7 @@ public class GameActivity extends Activity {
     @Override
     protected void onResume() {
         if (initialized) {
-            mp.start();
+            // the parent activity is resumed, resume the timer and audios
             setTimer();
             timer.schedule(new TimerTask() {
                 @Override
@@ -386,7 +415,7 @@ public class GameActivity extends Activity {
         byte[] data = pack.readResource(pathname);
         File tempFile;
         try {
-            tempFile = File.createTempFile(new Date().toString(), "mp3", getCacheDir());
+            tempFile = File.createTempFile(new Date().toString(), pathname.substring(pathname.length()-3), getCacheDir());
             tempFile.deleteOnExit();
             FileOutputStream fos = new FileOutputStream(tempFile);
             fos.write(data);
@@ -396,44 +425,41 @@ public class GameActivity extends Activity {
             finish();
             return 0;
         }
-
-        if (bLoop) {
-            try {
-                mp.setDataSource(tempFile.getPath());
-                mp.prepareAsync();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            return MEDIAPLAYER_ID;
-        } else {
-            return sp.load(tempFile.getPath(), 1);
-        }
+        int id = sp.load(tempFile.getPath(), 1);
+        sounds.put(id, new SoundState(bLoop));
+        return id;
     }
     public void stopSound(int sound) {
-        if (sound == MEDIAPLAYER_ID){
-            mp.stop();
-            mp.reset();
-        } else {
+        if (sounds.containsKey(sound)) {
             sp.stop(sound);
             sp.unload(sound);
+            sounds.remove(sound);
         }
     }
     public void setVolume(int sound, float volume) {
-        if (sound == MEDIAPLAYER_ID) {
-            mp.setVolume(volume, volume);
-        } else {
+        if (sounds.containsKey(sound)) {
             sp.setVolume(sound, volume, volume);
         }
     }
     public void playSound(int sound) {
-        if (sound == MEDIAPLAYER_ID) return;
-        sp.play(sound,1,1,1,0,1);
+        if (sounds.containsKey(sound)) {
+            SoundState state = sounds.get(sound);
+            if (state.loaded) {
+                int loop = 0;
+                if (state.loop)
+                    loop = -1;  // -1 for loop forever
+                sp.play(sound,1,1,1, loop,1);
+            } else {
+                // Create a mark, so we can play it later
+                state.addCount();
+            }
+        }
     }
     public String getSetting(String key) {
         return prop.getProperty(key);   // return null if not found
     }
     public void saveSetting(String key, String value) {
-        prop.setProperty(key,value);
+        prop.setProperty(key, value);
     }
 
     /**

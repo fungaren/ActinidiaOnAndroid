@@ -103,6 +103,8 @@ public class MainActivity extends Activity
      */
     public void launchGame(File gameRes) {
         boolean vertical;
+        int preferred_width;
+        int preferred_height;
         if (!gameRes.isFile() || !gameRes.getName().endsWith(".res")) {
             Log.e("ACTINIDIA", "Cannot locate to resource file: "+ gameRes.getAbsolutePath());
             return;
@@ -122,15 +124,21 @@ public class MainActivity extends Activity
             Properties p = new Properties();
             p.load(in);
             vertical = p.getProperty("orientation","horizontal").equals("vertical");
+            preferred_width = Integer.parseInt(p.getProperty("preferred_width","0"));
+            preferred_height = Integer.parseInt(p.getProperty("preferred_height","0"));
             in.close();
         }
         catch (IOException e) {
             vertical = false;
+            preferred_width = 0;
+            preferred_height = 0;
         }
 
         // Game start
         Intent i = new Intent(MainActivity.this, GameActivity.class);
         i.putExtra("vertical", vertical);
+        i.putExtra("preferred_width", preferred_width);
+        i.putExtra("preferred_height", preferred_height);
         i.putExtra("gameDir", gameRes.getParentFile());
         i.putExtra("gameRes", gameRes);
         startActivity(i);

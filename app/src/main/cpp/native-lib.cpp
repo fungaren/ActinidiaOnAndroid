@@ -6,8 +6,8 @@ lua_State* L;
 // lua: string OnCreate(), "" for success, msg for error
 extern "C"
 JNIEXPORT jstring JNICALL
-Java_cc_moooc_actinidia_GameActivity_OnCreate(JNIEnv *env, jobject thiz){
-
+Java_cc_moooc_actinidia_GameActivity_OnCreate(JNIEnv *env, jobject thiz)
+{
     api_env = env;      // !!!
     api_thiz = thiz;
     jcls = env->GetObjectClass(thiz);
@@ -50,7 +50,7 @@ Java_cc_moooc_actinidia_GameActivity_OnCreate(JNIEnv *env, jobject thiz){
 	{
         api_env->ReleaseStringUTFChars(jstr,buff);
         api_env->DeleteLocalRef(jstr);
-
+        // update core.screenwidth and core.screenheight
 		lua_getglobal(L, "core");
 		lua_pushinteger(L, api_env->CallIntMethod(
                 api_thiz, api_env->GetMethodID(jcls,"getScreenWidth","()I")));
@@ -64,7 +64,7 @@ Java_cc_moooc_actinidia_GameActivity_OnCreate(JNIEnv *env, jobject thiz){
         if (lua_pcall(L, 0, 1, 0)) {
             api_env->DeleteLocalRef(jcls);
             return env->NewStringUTF("");
-        } else if (lua_isstring(L,-1)) {
+        } else if (lua_isstring(L, -1)) {
             api_env->DeleteLocalRef(jcls);
             const char* luaErr = lua_tostring(L, -1);
             if (*luaErr == 0)
@@ -90,7 +90,7 @@ Java_cc_moooc_actinidia_GameActivity_OnPaint(JNIEnv *env, jobject thiz, jobject 
 {
     api_env = env;
     api_thiz = thiz;
-    jcls = api_env->GetObjectClass(api_thiz);         // !!! do this every time
+    jcls = api_env->GetObjectClass(api_thiz);    // !!! do this every time
 
     lua_getglobal(L, "OnPaint");
     lua_pushinteger(L, (LUA_INTEGER)WndGraphic); // typedef _jobject* jobject;
@@ -103,7 +103,8 @@ Java_cc_moooc_actinidia_GameActivity_OnPaint(JNIEnv *env, jobject thiz, jobject 
 // lua: void OnClose()
 extern "C"
 JNIEXPORT jint JNICALL
-Java_cc_moooc_actinidia_GameActivity_OnClose(JNIEnv *env, jobject thiz){
+Java_cc_moooc_actinidia_GameActivity_OnClose(JNIEnv *env, jobject thiz)
+{
     api_env = env;
     api_thiz = thiz;
     jcls = api_env->GetObjectClass(api_thiz);         // !!!
@@ -119,7 +120,8 @@ Java_cc_moooc_actinidia_GameActivity_OnClose(JNIEnv *env, jobject thiz){
 // lua: void OnLButtonDown(int x, int y)
 extern "C"
 JNIEXPORT jint JNICALL
-Java_cc_moooc_actinidia_GameActivity_OnLButtonDown(JNIEnv *env, jobject thiz, jfloat x, jfloat y){
+Java_cc_moooc_actinidia_GameActivity_OnLButtonDown(JNIEnv *env, jobject thiz, jfloat x, jfloat y)
+{
     api_env = env;
     api_thiz = thiz;
     jcls = api_env->GetObjectClass(api_thiz);         // !!!
@@ -136,7 +138,8 @@ Java_cc_moooc_actinidia_GameActivity_OnLButtonDown(JNIEnv *env, jobject thiz, jf
 // lua: void OnLButtonUp(int x, int y)
 extern "C"
 JNIEXPORT jint JNICALL
-Java_cc_moooc_actinidia_GameActivity_OnLButtonUp(JNIEnv *env, jobject thiz, jfloat x, jfloat y){
+Java_cc_moooc_actinidia_GameActivity_OnLButtonUp(JNIEnv *env, jobject thiz, jfloat x, jfloat y)
+{
     api_env = env;
     api_thiz = thiz;
     jcls = api_env->GetObjectClass(api_thiz);         // !!!
@@ -153,10 +156,11 @@ Java_cc_moooc_actinidia_GameActivity_OnLButtonUp(JNIEnv *env, jobject thiz, jflo
 // lua: void OnMouseMove(int x, int y)
 extern "C"
 JNIEXPORT jint JNICALL
-Java_cc_moooc_actinidia_GameActivity_OnMouseMove(JNIEnv *env, jobject thiz, jfloat x, jfloat y){
+Java_cc_moooc_actinidia_GameActivity_OnMouseMove(JNIEnv *env, jobject thiz, jfloat x, jfloat y)
+{
     api_env = env;
     api_thiz = thiz;
-    jcls = api_env->GetObjectClass(api_thiz);         // !!! do this every time
+    jcls = api_env->GetObjectClass(api_thiz);  // !!! do this every time
 
     lua_getglobal(L, "OnMouseMove");
     lua_pushinteger(L, (int)x);
@@ -170,7 +174,8 @@ Java_cc_moooc_actinidia_GameActivity_OnMouseMove(JNIEnv *env, jobject thiz, jflo
 // lua: void OnSetFocus()
 extern "C"
 JNIEXPORT jint JNICALL
-Java_cc_moooc_actinidia_GameActivity_OnSetFocus(JNIEnv *env, jobject thiz){
+Java_cc_moooc_actinidia_GameActivity_OnSetFocus(JNIEnv *env, jobject thiz)
+{
     api_env = env;
     api_thiz = thiz;
     jcls = api_env->GetObjectClass(api_thiz);         // !!!
@@ -185,7 +190,8 @@ Java_cc_moooc_actinidia_GameActivity_OnSetFocus(JNIEnv *env, jobject thiz){
 // lua: void OnKillFocus()
 extern "C"
 JNIEXPORT jint JNICALL
-Java_cc_moooc_actinidia_GameActivity_OnKillFocus(JNIEnv *env, jobject thiz){
+Java_cc_moooc_actinidia_GameActivity_OnKillFocus(JNIEnv *env, jobject thiz)
+{
     api_env = env;
     api_thiz = thiz;
     jcls = api_env->GetObjectClass(api_thiz);         // !!!

@@ -28,11 +28,9 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -41,14 +39,17 @@ public class GameActivity extends Activity {
     private SurfaceView sfv;
     private SurfaceHolder sfh;
     private Boolean initialized = false;
+    private ResourcePack pack;          // Resource Pack
 
     static {
         System.loadLibrary("lua-lib");
         System.loadLibrary("native-lib");
     }
 
-    private ResourcePack pack;          // Resource Pack
-    private boolean vertical = false;   // config.ini
+    // config.ini
+    private boolean vertical = false;
+    private int preferred_width;
+    private int preferred_height;
 
     private Timer timer;                // Refresh the surface view. Any tasks will be processed here.
     private TimerTask paint_loop;
@@ -60,11 +61,14 @@ public class GameActivity extends Activity {
     private Properties prop;            // load settings at beginning, save setting on destroy
 
     static private class SoundState {
+        String path;
+        int streamId;
         boolean loaded = false;
         boolean loop;
         private int play_count = 0;
-        public SoundState(boolean loop) {
+        public SoundState(boolean loop, String path) {
             this.loop = loop;
+            this.path = path;
         }
         public void addCount() {
             play_count += 1;
@@ -88,6 +92,9 @@ public class GameActivity extends Activity {
             if (!vertical) {                  // a new activity is vertical
                 setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
             }
+            // preferred window size
+            preferred_width = i.getIntExtra("preferred_width", 0);
+            preferred_height = i.getIntExtra("preferred_height", 0);
         } else {
             Toast.makeText(this, R.string.failed_to_load_res, Toast.LENGTH_LONG).show();
             finish();
@@ -131,6 +138,7 @@ public class GameActivity extends Activity {
                 }
             }
         });
+
         sounds = new HashMap<Integer, SoundState>();
 
         // set SurfaceView
@@ -164,16 +172,31 @@ public class GameActivity extends Activity {
         sfv.setOnTouchListener(new SurfaceView.OnTouchListener() {
             float oldX = 0, oldY = 0;
             float p1, p2;
+            /* The game specified the preferred window size though,
+             * on the smart phone, we stretch the canvas to full screen.
+             * So it's necessary for us to convert the pointer coordination.
+             */
+            private float coordinator_convert_x(View v, float x) {
+                if (preferred_width == 0)
+                    return x;
+                else
+                    return x*preferred_width/v.getWidth();
+            }
+            private float coordinator_convert_y(View v, float y) {
+                if (preferred_height == 0)
+                    return y;
+                else
+                    return y*preferred_height/v.getHeight();
+            }
 
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
                 // int i = motionEvent.getActionIndex();
                 switch (motionEvent.getActionMasked()) {
-                    // Note that we can NOT invoke callbacks directly.
-                    // As we should NOT do that on main thread.
+                    // Note that we can NOT invoke callbacks directly, because it will cause a crash.
                     case MotionEvent.ACTION_DOWN:   // A primary pointer has gone down.
-                        p1 = motionEvent.getX(0);
-                        p2 = motionEvent.getY(0);
+                        p1 = coordinator_convert_x(view, motionEvent.getX(0));
+                        p2 = coordinator_convert_y(view, motionEvent.getY(0));
                         timer.schedule(new TimerTask() {
                             @Override
                             public void run() {
@@ -182,8 +205,8 @@ public class GameActivity extends Activity {
                         }, 0);
                         break;
                     case MotionEvent.ACTION_UP:     // A primary pointer has gone up.
-                        p1 = motionEvent.getX(0);
-                        p2 = motionEvent.getY(0);
+                        p1 = coordinator_convert_x(view, motionEvent.getX(0));
+                        p2 = coordinator_convert_y(view, motionEvent.getY(0));
                         timer.schedule(new TimerTask() {
                             @Override
                             public void run() {
@@ -192,8 +215,8 @@ public class GameActivity extends Activity {
                         }, 0);
                         break;
                     case MotionEvent.ACTION_POINTER_DOWN:   // A non-primary pointer has gone down.
-                        p1 = motionEvent.getX(1);
-                        p2 = motionEvent.getY(1);
+                        p1 = coordinator_convert_x(view, motionEvent.getX(1));
+                        p2 = coordinator_convert_y(view, motionEvent.getY(1));
                         timer.schedule(new TimerTask() {
                             @Override
                             public void run() {
@@ -202,8 +225,8 @@ public class GameActivity extends Activity {
                         }, 0);
                         break;
                     case MotionEvent.ACTION_POINTER_UP:     // A non-primary pointer has gone up.
-                        p1 = motionEvent.getX(1);
-                        p2 = motionEvent.getY(1);
+                        p1 = coordinator_convert_x(view, motionEvent.getX(1));
+                        p2 = coordinator_convert_y(view, motionEvent.getY(1));
                         timer.schedule(new TimerTask() {
                             @Override
                             public void run() {
@@ -213,11 +236,11 @@ public class GameActivity extends Activity {
                         break;
                     case MotionEvent.ACTION_MOVE:
                     {
-                        float newX = motionEvent.getX(0);
-                        float newY = motionEvent.getY(0);
+                        float newX = coordinator_convert_x(view, motionEvent.getX(0));
+                        float newY = coordinator_convert_y(view, motionEvent.getY(0));
                         p1 = newX; p2 = newY;
                         // Suppress slight shiver
-                        if (Math.abs(newX-oldX)>4 || Math.abs(newY-oldY)>4)
+                        if (Math.abs(newX-oldX)>3 || Math.abs(newY-oldY)>4)
                             timer.schedule(new TimerTask() {
                                 @Override
                                 public void run() {
@@ -412,6 +435,11 @@ public class GameActivity extends Activity {
                 new Paint(Paint.ANTI_ALIAS_FLAG));
     }
     public int getSound(String pathname, boolean bLoop) {
+        // find exists item
+        for (int i : sounds.keySet()) {
+            if (sounds.get(i).path.equals(pathname))
+                return i; // Maybe we should update bLoop here, but I think it's unnecessary.
+        }
         byte[] data = pack.readResource(pathname);
         File tempFile;
         try {
@@ -426,12 +454,12 @@ public class GameActivity extends Activity {
             return 0;
         }
         int id = sp.load(tempFile.getPath(), 1);
-        sounds.put(id, new SoundState(bLoop));
+        sounds.put(id, new SoundState(bLoop, pathname));
         return id;
     }
     public void stopSound(int sound) {
         if (sounds.containsKey(sound)) {
-            sp.stop(sound);
+            sp.stop(sounds.get(sound).streamId);
             sp.unload(sound);
             sounds.remove(sound);
         }
@@ -448,7 +476,8 @@ public class GameActivity extends Activity {
                 int loop = 0;
                 if (state.loop)
                     loop = -1;  // -1 for loop forever
-                sp.play(sound,1,1,1, loop,1);
+                // play the sound and store the streamId
+                state.streamId = sp.play(sound,1,1,1, loop,1);
             } else {
                 // Create a mark, so we can play it later
                 state.addCount();

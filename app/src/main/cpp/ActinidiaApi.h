@@ -35,8 +35,8 @@ int CreateImageEx(lua_State *L)
     LUA_INTEGER color = lua_tointeger(L, 3);
     lua_pop(L, 3);
     jobject g = api_env->CallObjectMethod(
-            api_thiz, api_env->GetMethodID(jcls,"createImageEx","(IIIII)Landroid/graphics/Bitmap;"),
-            width, height, (char)color, (char)(color>>8), (char)(color>>16));
+            api_thiz, api_env->GetMethodID(jcls,"createImageEx","(IIIIII)Landroid/graphics/Bitmap;"),
+            width, height, (char)color, (char)(color>>8), (char)(color>>16), (char)(color>>24));
     g = api_env->NewGlobalRef(g);   // !!!
     lua_pushinteger(L, (LUA_INTEGER)g);
     return 1;

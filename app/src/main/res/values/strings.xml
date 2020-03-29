@@ -27,4 +27,5 @@
     <string name="please_wait">Please wait&#8230;</string>
     <string name="failed_to_load_res">Failed to load game resources！</string>
     <string name="invalid_resource_pack">Invalid resource pack!</string>
+    <string name="cannot_read_directory">Can not read directory: </string>
 </resources>

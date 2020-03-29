@@ -4,21 +4,22 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
-import android.graphics.Typeface;
 import android.media.SoundPool;
 import android.os.Bundle;
-import android.view.MotionEvent;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
 import android.graphics.Rect;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
+import android.graphics.Typeface;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.MotionEvent;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.widget.Toast;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -355,14 +356,18 @@ public class GameActivity extends Activity {
         c.drawColor(Color.BLACK);
         return bmp;
     }
-    public Bitmap createImageEx(int width, int height, int r, int g, int b){
+    public Bitmap createImageEx(int width, int height, int r, int g, int b, int a) {
         Bitmap bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        bmp.setHasAlpha(true);
         Canvas c = new Canvas(bmp);
-        c.drawColor(Color.rgb(r,g,b));
+        c.drawColor(Color.argb(a,r,g,b));
         return bmp;
     }
     public Bitmap createTransImage(int width, int height) {
         Bitmap bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        bmp.setHasAlpha(true);
+        Canvas c = new Canvas(bmp);
+        c.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
         return bmp;
     }
     public void printText(Bitmap bmp, float x, float y, String str, String fontName, float fontSize, int r, int g, int b) {
@@ -460,8 +465,7 @@ public class GameActivity extends Activity {
     public void stopSound(int sound) {
         if (sounds.containsKey(sound)) {
             sp.stop(sounds.get(sound).streamId);
-            sp.unload(sound);
-            sounds.remove(sound);
+            // sp.unload(sound); // the script may use it again
         }
     }
     public void setVolume(int sound, float volume) {
@@ -470,6 +474,7 @@ public class GameActivity extends Activity {
         }
     }
     public void playSound(int sound) {
+        // in case the script passed a invalid soundId
         if (sounds.containsKey(sound)) {
             SoundState state = sounds.get(sound);
             if (state.loaded) {

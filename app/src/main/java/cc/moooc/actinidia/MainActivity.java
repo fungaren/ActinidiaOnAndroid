@@ -66,6 +66,12 @@ public class MainActivity extends Activity
         {
             File sdCardDir = Environment.getExternalStorageDirectory();
             File[] files = sdCardDir.listFiles();     // list games
+            if (files == null) {
+                Toast.makeText(this,
+                        getString(R.string.cannot_read_directory)+sdCardDir.getAbsolutePath(),
+                        Toast.LENGTH_LONG).show();
+                return;
+            }
             LinkedList<String> list = new LinkedList<>();
 
             for (File game_res : files)
